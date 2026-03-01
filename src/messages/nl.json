@@ -1,0 +1,487 @@
+{
+  "common": {
+    "loading": "Laden...",
+    "error": "Fout",
+    "success": "Gelukt",
+    "cancel": "Annuleren",
+    "save": "Opslaan",
+    "delete": "Verwijderen",
+    "edit": "Bewerken",
+    "back": "Terug",
+    "next": "Volgende",
+    "previous": "Vorige",
+    "download": "Downloaden",
+    "close": "Sluiten",
+    "copy": "Kopiëren",
+    "copied": "Gekopieerd!",
+    "search": "Zoeken",
+    "active": "Actief",
+    "inactive": "Inactief"
+  },
+
+  "header": {
+    "library": "Bibliotheek",
+    "shop": "Winkel",
+    "generator": "Generator",
+    "exitLibrary": "Bibliotheek verlaten"
+  },
+  "navigation": {
+    "home": "Home",
+    "shop": "Winkel",
+    "planners": "Planners",
+    "printables": "Printables",
+    "bundles": "Bundels",
+    "notebooks": "Notitieboeken",
+    "templates": "Sjablonen",
+    "contact": "Contact",
+    "about": "Over ons",
+    "terms": "Algemene Voorwaarden",
+    "howToImport": "Hoe te Importeren",
+    "freeSample": "Gratis Voorbeeld"
+  },
+
+  "landing": {
+    "hero": {
+      "title": "Digitale planners",
+      "titleHighlight": "met zorg ontworpen",
+      "subtitle": "Premium GoodNotes-planners met 65+ sjablonen, agenda-integratie en meerdere kleurthema’s. Plan je jaar op jouw manier.",
+      "ctaPrimary": "Shop op Etsy",
+      "ctaSecondary": "Naar je planners",
+      "features": {
+        "templates": "65+ sjablonen",
+        "themes": "Meerdere thema’s",
+        "language": "Meertalig",
+        "goodnotes": "Geschikt voor GoodNotes"
+      }
+    },
+
+    "features": {
+      "title": "Alles wat je nodig hebt",
+      "subtitle": "Speciaal ontworpen voor digitaal plannen",
+
+      "hyperlinked": {
+        "title": "Volledig doorlinkt",
+        "description": "Navigeer eenvoudig tussen dagen, weken, maanden en notities met handige doorkliklinks."
+      },
+
+      "themes": {
+        "title": "Meerdere thema’s",
+        "description": "Kies uit zorgvuldig ontworpen kleurthema’s die prettig zijn om te lezen op elk scherm."
+      },
+
+      "templates": {
+        "title": "Uitgebreide sjablonen",
+        "description": "Dag-, week- en maandoverzichten, aangevuld met habit trackers, doelen, notities en meer."
+      },
+
+      "optimized": {
+        "title": "Geoptimaliseerd voor GoodNotes",
+        "description": "Ontworpen voor GoodNotes, Notability en andere notitie-apps met optimaal contrast."
+      }
+    },
+
+    "themes": {
+      "title": "Kies je thema",
+      "subtitle": "Elk thema is ontworpen voor optimale leesbaarheid"
+    }
+  },
+
+  "footer": {
+    "copyright": "Layouts by Lenny",
+    "tagline": "Digitale planners, met zorg ontworpen.",
+    "about": "Over ons",
+    "contact": "Contact",
+    "terms": "Voorwaarden",
+    "howToImport": "Hoe te Importeren"
+  },
+  "pages": {
+    "contact": {
+      "title": "Contact",
+      "description": "Neem contact op met Layouts by Lenny",
+      "heading": "Neem Contact Op",
+      "intro": "Heb je vragen over onze digitale planners? We horen graag van je!",
+      "email": "E-mail",
+      "emailAddress": "support@layoutsbylenny.com",
+      "address": "Layouts by Lenny\nKuifeend 40\n9781 ZJ Bedum\nGroningen - Nederland",
+      "etsy": "Etsy Winkel",
+      "etsyDescription": "Bezoek onze Etsy winkel voor aankopen en berichten",
+      "responseTime": "We reageren meestal binnen 24-48 uur."
+    },
+    "about": {
+      "title": "Over ons",
+      "description": "Leer meer over Layouts by Lenny en onze digitale planners",
+      "heading": "Over Layouts by Lenny",
+      "intro": "Mooie digitale planners, met zorg ontworpen.",
+      "story": "Layouts by Lenny is opgericht met een eenvoudige missie: het maken van digitale planners die zowel mooi als functioneel zijn. Wij geloven dat het plannen van je leven een leuke ervaring moet zijn, geen karwei.",
+      "mission": "Onze Missie",
+      "missionText": "Mensen helpen hun leven te organiseren met doordacht ontworpen digitale planningstools die naadloos werken op alle apparaten.",
+      "quality": "Kwaliteit & Zorg",
+      "qualityText": "Elke planner is zorgvuldig gemaakt met aandacht voor detail, voor optimale leesbaarheid en gebruiksgemak in GoodNotes, Notability en andere notitie-apps."
+    },
+    "terms": {
+      "title": "Algemene Voorwaarden",
+      "description": "Algemene voorwaarden voor Layouts by Lenny producten",
+      "heading": "Algemene Voorwaarden",
+      "lastUpdated": "Laatst bijgewerkt: januari 2026",
+      "digital": {
+        "title": "Digitale Producten",
+        "content": "Alle producten die door Layouts by Lenny worden verkocht zijn digitale downloads. Na aankoop krijg je direct toegang om je bestanden te downloaden."
+      },
+      "license": {
+        "title": "Licentie",
+        "content": "Je aankoop geeft je een persoonlijke, niet-overdraagbare licentie om de digitale planner alleen voor persoonlijk gebruik te gebruiken. Je mag je gekochte bestanden niet herverdelen, doorverkopen of delen."
+      },
+      "refunds": {
+        "title": "Restitutie",
+        "content": "Vanwege de digitale aard van onze producten zijn alle verkopen definitief. Als je technische problemen ondervindt met je download, neem dan contact met ons op en we zullen het probleem oplossen."
+      },
+      "copyright": {
+        "title": "Auteursrecht",
+        "content": "Alle ontwerpen, lay-outs en inhoud zijn intellectueel eigendom van Layouts by Lenny. Ongeautoriseerde reproductie of distributie is verboden."
+      },
+      "contact": {
+        "title": "Vragen?",
+        "content": "Als je vragen hebt over deze voorwaarden, neem dan contact met ons op."
+      }
+    },
+    "howToImport": {
+      "title": "Hoe te Importeren",
+      "description": "Leer hoe je jouw digitale planner importeert in GoodNotes, Noteshelf en andere apps",
+      "heading": "Hoe Importeer je jouw Planner",
+      "intro": "Volg deze eenvoudige stappen om je digitale planner te gebruiken in je favoriete notitie-app.",
+      "goodnotes": {
+        "title": "GoodNotes",
+        "step1": "Download je planner PDF naar je apparaat",
+        "step2": "Open GoodNotes en tik op de + knop om een nieuw document te maken",
+        "step3": "Selecteer \"Importeren\" en kies je gedownloade PDF-bestand",
+        "step4": "Je planner is klaar voor gebruik! Tik op een hyperlink om tussen pagina's te navigeren"
+      },
+      "noteshelf": {
+        "title": "Noteshelf",
+        "step1": "Download je planner PDF naar je apparaat",
+        "step2": "Open Noteshelf en tik op \"Nieuw maken\"",
+        "step3": "Selecteer \"PDF importeren\" en zoek je plannerbestand",
+        "step4": "Open je geïmporteerde planner en begin met plannen!"
+      },
+      "notability": {
+        "title": "Notability",
+        "step1": "Download je planner PDF naar je apparaat",
+        "step2": "Open Notability en tik op het import-icoon (pijl naar beneden)",
+        "step3": "Kies je PDF-bestand vanuit Bestanden of je downloadlocatie",
+        "step4": "Je planner opent met alle hyperlinks werkend"
+      },
+      "tips": {
+        "title": "Tips voor de beste ervaring",
+        "tip1": "Zorg ervoor dat je de PDF naar je apparaat downloadt voordat je importeert",
+        "tip2": "Bewaar het originele PDF-bestand als backup",
+        "tip3": "Gebruik de hyperlinks om snel tussen secties te navigeren",
+        "tip4": "Stel je planner in als favoriet voor snelle toegang"
+      },
+      "needHelp": "Hulp Nodig?",
+      "needHelpText": "Als je problemen hebt met het importeren van je planner, neem dan contact met ons op en we helpen je graag."
+    },
+    "freeSample": {
+      "title": "Gratis Voorbeeld",
+      "description": "Download een gratis proefmaand van onze digitale planner. Probeer voor je koopt!",
+      "heading": "Gratis sample proberen",
+      "intro": "Download een gratis proefplanner van een maand om zelf de kwaliteit te ervaren. Kies je favoriete kleurthema en taal, en ontvang een PDF met dagelijkse, wekelijkse en maandelijkse pagina's."
+    }
+  },
+
+  "library": {
+    "access": {
+      "title": "Toegang tot je planner",
+      "subtitle": "Voer de toegangscode van je aankoop in om je persoonlijke digitale planner te downloaden.",
+      "placeholder": "Voer je toegangscode in",
+      "submit": "Naar bibliotheek",
+      "submitting": "Controleren...",
+      "help": "Je toegangscode vind je in de bevestigingsmail van je Etsy-bestelling.",
+      "errors": {
+        "invalid": "Ongeldige toegangscode. Controleer de code en probeer het opnieuw.",
+        "expired": "Deze toegangscode is verlopen.",
+        "notFound": "Toegangscode niet gevonden. Controleer of je de juiste code hebt ingevoerd."
+      }
+    },
+
+    "hub": {
+      "title": "Jouw plannercollectie",
+      "subtitle": "Kies je voorkeuren om je planner te downloaden",
+
+      "viewMode": {
+        "stepByStep": "Stap voor stap",
+        "compact": "Compact"
+      },
+
+      "compact": {
+        "language": "Taal",
+        "weekStart": "Weekstart",
+        "timeFormat": "Tijdnotatie",
+        "calendar": "Agenda-integratie",
+        "plannerType": "Plannertype",
+        "theme": "Kleurthema",
+        "templates": "{count} sjablonen"
+      },
+
+      "wizard": {
+        "title": "Stap-voor-stap configuratie",
+        "description": "Beantwoord een paar korte vragen en stel je ideale planner samen.",
+        "button": "Start configuratie"
+      },
+
+      "browse": {
+        "title": "Alle bestanden bekijken",
+        "description": "Bekijk en download alle beschikbare plannerbestanden.",
+        "button": "Bestanden bekijken"
+      },
+
+      "changeSelections": "Keuzes aanpassen"
+    },
+
+    "wizard": {
+      "progress": "Stap {current} van {total}",
+
+      "device": {
+        "title": "Kies je apparaat"
+      },
+
+      "language": {
+        "title": "Kies je taal",
+        "subtitle": "Selecteer de taal van je planner"
+      },
+
+      "plannerType": {
+        "title": "Kies je plannertype",
+        "subtitle": "Selecteer het detailniveau dat bij jouw stijl past",
+
+        "full": {
+          "name": "Full",
+          "description": "De volledige planner met alle sjablonen en functies"
+        },
+
+        "focus": {
+          "name": "Focus",
+          "description": "Een overzichtelijke planner voor dagelijks gebruik"
+        },
+
+        "minimal": {
+          "name": "Minimal",
+          "description": "Rustig en eenvoudig voor basisplanning"
+        }
+      },
+
+      "weekStart": {
+        "title": "Startdag van de week",
+        "subtitle": "Kies op welke dag je week begint",
+        "monday": "Maandag",
+        "sunday": "Zondag"
+      },
+
+      "timeFormat": {
+        "title": "Tijdnotatie",
+        "subtitle": "Kies hoe tijden worden weergegeven",
+        "24h": "24-uursnotatie",
+        "24hExample": "14:00, 18:30",
+        "ampm": "AM/PM",
+        "ampmExample": "2:00 PM, 6:30 PM"
+      },
+
+      "calendar": {
+        "title": "Agenda-integratie",
+        "subtitle": "Voeg snelle links toe voor agenda-items",
+
+        "none": "Geen integratie",
+        "noneDescription": "Alleen de planner, zonder agenda-links",
+
+        "google": "Google Agenda",
+        "googleDescription": "Snelle links voor Google Agenda",
+
+        "apple": "Apple Agenda",
+        "appleDescription": "Snelle links voor Apple Agenda"
+      },
+
+      "result": {
+        "title": "Je planner is klaar!",
+        "subtitle": "Controleer je keuzes en download je persoonlijke planner.",
+        "language": "Taal",
+        "templates": "Sjablonen",
+        "weekStarts": "Weekstart",
+        "timeFormat": "Tijdnotatie",
+        "calendarIntegration": "Agenda-integratie",
+        "helpImporting": "Hulp nodig bij het importeren van je planner?",
+        "howToImportLink": "Bekijk onze stap-voor-stap handleiding",
+        "download": "Planner downloaden",
+        "downloading": "Download voorbereiden...",
+        "downloaded": "Gedownload! Klik om opnieuw te downloaden",
+
+        "error": {
+          "title": "Download mislukt",
+          "default": "Probeer het opnieuw"
+        }
+      }
+    },
+
+    "browse": {
+      "title": "Bestanden bekijken",
+      "subtitle": "Bekijk en download alle beschikbare plannerconfiguraties",
+
+      "filters": {
+        "language": "Taal",
+        "plannerType": "Plannertype",
+        "weekStart": "Weekstart",
+        "timeFormat": "Tijdnotatie",
+        "calendar": "Agenda"
+      },
+
+      "noFiles": "Geen bestanden gevonden",
+      "downloadAll": "Alles downloaden"
+    }
+  },
+
+  "shop": {
+    "description": "Bekijk onze collectie digitale planners en sjablonen.",
+    "backToShop": "Terug naar winkel",
+    "bundle": "Bundel",
+    "allAccess": "Toegang tot alles",
+    "whatsIncluded": "Wat is inbegrepen?",
+    "accessToProducts": "Toegang tot {count} producten",
+    "includesFutureProducts": "Inclusief alle toekomstige producten",
+    "unlimitedDownloads": "Onbeperkt downloaden",
+    "allThemesAndColors": "Alle thema’s en kleurvarianten",
+    "includedProducts": "Producten in deze bundel",
+    "youOwnBundle": "Je bezit deze bundel",
+    "youOwnProduct": "Je bezit dit product",
+    "goToLibrary": "Naar bibliotheek",
+    "addToCart": "In winkelwagen",
+    "added": "Toegevoegd!",
+    "instantDownload": "Direct beschikbaar na aankoop",
+    "includes": "Inclusief:",
+    "multipleTemplateLayouts": "Meerdere template-indelingen",
+    "timeFormats": "12- en 24-uursnotatie",
+    "calendarIntegration": "Agenda-integratie opties",
+    "weekStartOptions": "Keuze uit maandag- of zondagstart"
+  },
+
+  "account": {
+    "welcomeBack": "Welkom terug!",
+    "orders": "Bestellingen",
+    "totalOrders": "totale bestellingen",
+    "downloads": "Downloads",
+    "availableProducts": "beschikbare producten",
+    "recentOrders": "Recente bestellingen",
+    "viewAll": "Alles bekijken",
+    "noOrdersYet": "Je hebt nog geen bestellingen geplaatst.",
+    "order": "Bestelling",
+    "goToDownloads": "Naar mijn downloads",
+    "continueShopping": "Verder winkelen",
+    "orderHistory": "Bekijk je bestelgeschiedenis en download je aankopen.",
+    "browseProducts": "Bekijk onze producten",
+    "qty": "Aantal",
+    "download": "Downloaden",
+    "invoice": "Factuur",
+    "downloadInvoice": "Factuur downloaden",
+    "status": {
+      "completed": "Voltooid",
+      "pending": "In behandeling",
+      "cancelled": "Geannuleerd",
+      "refunded": "Terugbetaald"
+    }
+  },
+  "checkout": {
+    "success": {
+      "title": "Bedankt voor je bestelling!",
+      "processingMessage": "Je ontvangt een e-mail met je downloadlinks zodra de betaling is verwerkt.",
+      "backToShop": "Terug naar winkel",
+      "orderConfirmed": "Bestelling #{orderId} is bevestigd.",
+      "emailSent": "Bevestigingsmail verstuurd",
+      "emailSentMessage": "We hebben een bevestigingsmail gestuurd naar {email} met je downloadlinks.",
+      "yourPurchases": "Je aankopen",
+      "filesAvailable": "bestanden beschikbaar",
+      "goToLibrary": "Ga naar bibliotheek",
+      "viewAllDownloads": "Bekijk al je downloads",
+      "goToAccount": "Naar mijn account"
+    }
+  },
+  "reviews": {
+    "title": "Klantbeoordelingen",
+    "writeReview": "Schrijf een beoordeling",
+    "noReviews": "Nog geen beoordelingen. Wees de eerste die dit product beoordeelt.",
+    "verifiedPurchase": "Geverifieerde aankoop",
+    "basedOn": "Gebaseerd op {count} beoordelingen",
+    "sortBy": "Sorteren op",
+    "sortRecent": "Meest recent",
+    "sortHighest": "Hoogst beoordeeld",
+    "sortLowest": "Laagst beoordeeld",
+    "yourRating": "Jouw beoordeling",
+    "yourName": "Je naam",
+    "yourReview": "Je beoordeling",
+    "submitReview": "Beoordeling versturen",
+    "submitting": "Versturen...",
+    "thankYou": "Bedankt voor je beoordeling!",
+    "reviewPending": "Je beoordeling wacht op goedkeuring.",
+    "loginToReview": "Log in om een beoordeling te schrijven",
+    "alreadyReviewed": "Je hebt dit product al beoordeeld",
+    "errors": {
+      "ratingRequired": "Selecteer een beoordeling",
+      "nameRequired": "Vul je naam in",
+      "reviewTooShort": "De beoordeling moet minimaal 10 tekens bevatten",
+      "submitFailed": "Het versturen van de beoordeling is mislukt. Probeer het opnieuw."
+    }
+  },
+  "languages": {
+    "en": "Engels",
+    "nl": "Nederlands",
+    "de": "Duits",
+    "fr": "Frans",
+    "es": "Spaans",
+    "it": "Italiaans"
+  },
+  "plannerTypes": {
+    "full": "Volledig",
+    "focus": "Focus",
+    "minimal": "Minimaal"
+  },
+  "weekDays": {
+    "monday": "Maandag",
+    "sunday": "Zondag"
+  },
+  "timeFormats": {
+    "24h": "24-uurs",
+    "ampm": "AM/PM"
+  },
+  "calendarIntegrations": {
+    "none": "Geen",
+    "google": "Google Agenda",
+    "apple": "Apple Agenda"
+  },
+  "devices": {
+    "ipad": {
+      "portrait": "iPad (Staand)",
+      "landscape": "iPad (Liggend)"
+    },
+    "ipad-mini": {
+      "portrait": "iPad Mini (Staand)",
+      "landscape": "iPad Mini (Liggend)"
+    },
+    "remarkable": {
+      "portrait": "reMarkable (Staand)",
+      "landscape": "reMarkable (Liggend)"
+    },
+    "rm-move": {
+      "portrait": "reMarkable Move (Staand)",
+      "landscape": "reMarkable Move (Liggend)"
+    },
+    "rm-paper-pro": {
+      "portrait": "reMarkable Paper Pro (Staand)",
+      "landscape": "reMarkable Paper Pro (Liggend)"
+    },
+    "filofax-a5": {
+      "portrait": "Filofax A5"
+    },
+    "filofax-personal": {
+      "portrait": "Filofax Personal"
+    },
+    "filofax-pocket": {
+      "portrait": "Filofax Pocket"
+    }
+  }
+}

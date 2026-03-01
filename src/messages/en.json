@@ -1,0 +1,514 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "download": "Download",
+    "close": "Close",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "search": "Search",
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "header": {
+    "library": "Library",
+    "shop": "Shop",
+    "generator": "Generator",
+    "exitLibrary": "Exit Library"
+  },
+  "navigation": {
+    "home": "Home",
+    "shop": "Shop",
+    "planners": "Planners",
+    "printables": "Printables",
+    "bundles": "Bundles",
+    "notebooks": "Notebooks",
+    "templates": "Templates",
+    "contact": "Contact",
+    "about": "About",
+    "terms": "Terms & Conditions",
+    "howToImport": "How to Import",
+    "freeSample": "Free Sample"
+  },
+  "landing": {
+    "hero": {
+      "title": "Digital Planners",
+      "titleHighlight": "Made Beautiful",
+      "subtitle": "Premium GoodNotes planners with 65+ templates, calendar integration, and multiple color themes. Plan your year, your way.",
+      "ctaPrimary": "Shop on Etsy",
+      "ctaSecondary": "Access Your Planners",
+      "features": {
+        "templates": "65+ Templates",
+        "themes": "Multiple Themes",
+        "language": "Multi-Language",
+        "goodnotes": "GoodNotes Ready"
+      }
+    },
+    "features": {
+      "title": "Everything You Need",
+      "subtitle": "Designed specifically for digital planning",
+      "hyperlinked": {
+        "title": "Fully Hyperlinked",
+        "description": "Navigate seamlessly between days, weeks, months, and notes with tap-to-jump links throughout."
+      },
+      "themes": {
+        "title": "Multiple Themes",
+        "description": "Choose from carefully crafted color themes that look beautiful on your display."
+      },
+      "templates": {
+        "title": "Rich Templates",
+        "description": "Daily, weekly, monthly views plus habit trackers, goal setting, notes, and more."
+      },
+      "optimized": {
+        "title": "GoodNotes Optimized",
+        "description": "Designed for GoodNotes, Notability, and other note-taking apps with proper contrast."
+      }
+    },
+    "themes": {
+      "title": "Choose Your Theme",
+      "subtitle": "Each theme is carefully designed for optimal readability"
+    }
+  },
+  "footer": {
+    "copyright": "Layouts by Lenny",
+    "tagline": "Digital planners designed with care.",
+    "about": "About",
+    "contact": "Contact",
+    "terms": "Terms",
+    "howToImport": "How to Import"
+  },
+  "pages": {
+    "contact": {
+      "title": "Contact",
+      "description": "Get in touch with Layouts by Lenny",
+      "heading": "Get in Touch",
+      "intro": "Have questions about our digital planners? We'd love to hear from you!",
+      "email": "Email",
+      "emailAddress": "support@layoutsbylenny.com",
+      "address": "Layouts by Lenny\nKuifeend 40\n9781 ZJ Bedum\nGroningen - Netherlands",
+      "etsy": "Etsy Shop",
+      "etsyDescription": "Visit our Etsy store for purchases and messages",
+      "responseTime": "We typically respond within 24-48 hours."
+    },
+    "about": {
+      "title": "About",
+      "description": "Learn about Layouts by Lenny and our digital planners",
+      "heading": "About Layouts by Lenny",
+      "intro": "Creating beautiful digital planners designed with care.",
+      "story": "Layouts by Lenny was founded with a simple mission: to create digital planners that are both beautiful and functional. We believe that planning your life should be an enjoyable experience, not a chore.",
+      "mission": "Our Mission",
+      "missionText": "To help people organize their lives with thoughtfully designed digital planning tools that work seamlessly across devices.",
+      "quality": "Quality & Care",
+      "qualityText": "Every planner is meticulously crafted with attention to detail, ensuring optimal readability and ease of use in GoodNotes, Notability, and other note-taking apps."
+    },
+    "terms": {
+      "title": "Terms & Conditions",
+      "description": "Terms and conditions for Layouts by Lenny products",
+      "heading": "Terms & Conditions",
+      "lastUpdated": "Last updated: January 2026",
+      "digital": {
+        "title": "Digital Products",
+        "content": "All products sold by Layouts by Lenny are digital downloads. Once purchased, you will receive access to download your files immediately."
+      },
+      "license": {
+        "title": "License",
+        "content": "Your purchase grants you a personal, non-transferable license to use the digital planner for personal use only. You may not redistribute, resell, or share your purchased files."
+      },
+      "refunds": {
+        "title": "Refunds",
+        "content": "Due to the digital nature of our products, all sales are final. If you experience technical issues with your download, please contact us and we will work to resolve the issue."
+      },
+      "copyright": {
+        "title": "Copyright",
+        "content": "All designs, layouts, and content are the intellectual property of Layouts by Lenny. Unauthorized reproduction or distribution is prohibited."
+      },
+      "contact": {
+        "title": "Questions?",
+        "content": "If you have any questions about these terms, please contact us."
+      }
+    },
+    "howToImport": {
+      "title": "How to Import",
+      "description": "Learn how to import your digital planner into GoodNotes, Noteshelf, and other apps",
+      "heading": "How to Import Your Planner",
+      "intro": "Follow these simple steps to start using your digital planner in your favorite note-taking app.",
+      "goodnotes": {
+        "title": "GoodNotes",
+        "step1": "Download your planner PDF to your device",
+        "step2": "Open GoodNotes and tap the + button to create a new document",
+        "step3": "Select \"Import\" and choose your downloaded PDF file",
+        "step4": "Your planner is ready to use! Tap any hyperlink to navigate between pages"
+      },
+      "noteshelf": {
+        "title": "Noteshelf",
+        "step1": "Download your planner PDF to your device",
+        "step2": "Open Noteshelf and tap \"Create New\"",
+        "step3": "Select \"Import PDF\" and locate your planner file",
+        "step4": "Open your imported planner and start planning!"
+      },
+      "notability": {
+        "title": "Notability",
+        "step1": "Download your planner PDF to your device",
+        "step2": "Open Notability and tap the import icon (arrow pointing down)",
+        "step3": "Choose your PDF file from Files or your download location",
+        "step4": "Your planner will open with all hyperlinks working"
+      },
+      "tips": {
+        "title": "Tips for Best Experience",
+        "tip1": "Make sure to download the PDF to your device before importing",
+        "tip2": "Keep the original PDF file as a backup",
+        "tip3": "Use the hyperlinks to quickly navigate between sections",
+        "tip4": "Set your planner as a favorite for quick access"
+      },
+      "needHelp": "Need Help?",
+      "needHelpText": "If you're having trouble importing your planner, please contact us and we'll be happy to assist."
+    },
+    "freeSample": {
+      "title": "Free Sample",
+      "description": "Download a free one-month sample of our digital planner. Try it before you buy!",
+      "heading": "Try Before You Buy",
+      "intro": "Download a free one-month sample planner to see the quality for yourself. Choose your preferred color theme and language, and get a PDF with daily, weekly, and monthly pages."
+    }
+  },
+  "library": {
+    "access": {
+      "title": "Access Your Planner",
+      "subtitle": "Enter the access code from your purchase to download your personalized digital planner.",
+      "placeholder": "Enter your access code",
+      "submit": "Access Library",
+      "submitting": "Verifying...",
+      "help": "Your access code was included in your Etsy order confirmation.",
+      "errors": {
+        "invalid": "Invalid access code. Please check and try again.",
+        "expired": "This access code has expired.",
+        "notFound": "Access code not found. Please check your code."
+      }
+    },
+    "hub": {
+      "title": "Your Planner Collection",
+      "subtitle": "Select your preferences to download your planner",
+      "viewMode": {
+        "stepByStep": "Step by step",
+        "compact": "Compact"
+      },
+      "compact": {
+        "language": "Language?",
+        "weekStart": "Week starts on?",
+        "timeFormat": "Time format?",
+        "calendar": "Calendar integration?",
+        "plannerType": "Planner type?",
+        "theme": "Color theme?",
+        "templates": "{count} templates"
+      },
+      "wizard": {
+        "title": "Guided Setup",
+        "description": "Answer a few questions and we'll create your perfect planner configuration.",
+        "button": "Start Wizard"
+      },
+      "browse": {
+        "title": "Browse All Files",
+        "description": "View and download all available planner files for your theme.",
+        "button": "Browse Files"
+      },
+      "changeSelections": "Change selections"
+    },
+    "wizard": {
+      "progress": "Step {current} of {total}",
+      "device": {
+        "title": "Choose Your Device"
+      },
+      "language": {
+        "title": "Choose Your Language",
+        "subtitle": "Select the language for your planner content"
+      },
+      "plannerType": {
+        "title": "Choose Your Planner Type",
+        "subtitle": "Select the level of detail that suits your planning style",
+        "full": {
+          "name": "Full",
+          "description": "Complete planner with all templates and features"
+        },
+        "focus": {
+          "name": "Focus",
+          "description": "Streamlined planner for essential planning"
+        },
+        "minimal": {
+          "name": "Minimal",
+          "description": "Simple and clean for basic planning needs"
+        }
+      },
+      "weekStart": {
+        "title": "Week Start Day",
+        "subtitle": "Choose which day your week begins",
+        "monday": "Monday",
+        "sunday": "Sunday"
+      },
+      "timeFormat": {
+        "title": "Time Format",
+        "subtitle": "Choose your preferred time display",
+        "24h": "24-Hour",
+        "24hExample": "14:00, 18:30",
+        "ampm": "AM/PM",
+        "ampmExample": "2:00 PM, 6:30 PM"
+      },
+      "calendar": {
+        "title": "Calendar Integration",
+        "subtitle": "Add quick-add links for calendar events",
+        "none": "No Integration",
+        "noneDescription": "Just the planner without calendar links",
+        "google": "Google Calendar",
+        "googleDescription": "Quick-add links for Google Calendar",
+        "apple": "Apple Calendar",
+        "appleDescription": "Quick-add links for Apple Calendar"
+      },
+      "result": {
+        "title": "Your planner is ready!",
+        "subtitle": "Review your selections and download your personalized planner.",
+        "language": "Language",
+        "templates": "Templates",
+        "weekStarts": "Week starts",
+        "timeFormat": "Time format",
+        "calendarIntegration": "Calendar integration",
+        "helpImporting": "Need help importing your planner?",
+        "howToImportLink": "View our step-by-step guide",
+        "download": "Download Planner",
+        "downloading": "Preparing download...",
+        "downloaded": "Downloaded! Click to download again",
+        "error": {
+          "title": "Download failed",
+          "default": "Please try again"
+        }
+      }
+    },
+    "browse": {
+      "title": "Browse Files",
+      "subtitle": "View and download all available planner configurations",
+      "filters": {
+        "language": "Language",
+        "plannerType": "Planner Type",
+        "weekStart": "Week Start",
+        "timeFormat": "Time Format",
+        "calendar": "Calendar"
+      },
+      "noFiles": "No files match your filters",
+      "downloadAll": "Download All"
+    }
+  },
+  "admin": {
+    "title": "Admin Dashboard",
+    "login": {
+      "title": "Admin Login",
+      "password": "Password",
+      "submit": "Login",
+      "error": "Invalid password"
+    },
+    "stats": {
+      "totalPurchases": "Total Purchases",
+      "totalDownloads": "Total Downloads",
+      "activeCodes": "Active Codes"
+    },
+    "purchases": {
+      "title": "Recent Purchases",
+      "search": "Search by code, email, or order ID...",
+      "columns": {
+        "accessCode": "Access Code",
+        "email": "Email",
+        "theme": "Theme",
+        "language": "Language",
+        "downloads": "Downloads",
+        "created": "Created",
+        "status": "Status"
+      },
+      "noPurchases": "No purchases found"
+    },
+    "createCode": {
+      "title": "Create Access Code",
+      "description": "Generate a new access code for a customer.",
+      "email": "Customer Email",
+      "emailPlaceholder": "customer@example.com",
+      "theme": "Theme",
+      "themePlaceholder": "Select theme",
+      "allThemes": "All Themes",
+      "language": "Language",
+      "languagePlaceholder": "Select language",
+      "allLanguages": "All Languages",
+      "etsyOrderId": "Etsy Order ID (optional)",
+      "submit": "Create Code",
+      "creating": "Creating...",
+      "success": {
+        "code": "Access code",
+        "link": "Direct link"
+      }
+    },
+    "bulkGenerator": {
+      "title": "Bulk Code Generator",
+      "description": "Generate multiple access codes at once for Etsy listings.",
+      "count": "Number of Codes",
+      "prefix": "Prefix (optional)",
+      "prefixPlaceholder": "e.g., etsy-batch-1",
+      "generate": "Generate {count} Code(s)",
+      "generating": "Generating...",
+      "allCombos": "All Combos ({count})",
+      "allCombosHelp": "Generate {count} code(s) for each of {themes} themes × {languages} languages = {total} total codes",
+      "generated": "Generated {count} codes",
+      "combinations": "{count} combinations",
+      "copyLinks": "Copy Links",
+      "downloadCsv": "CSV",
+      "downloadTxt": "TXT"
+    }
+  },
+  "languages": {
+    "en": "English",
+    "nl": "Dutch",
+    "de": "German",
+    "fr": "French",
+    "es": "Spanish",
+    "it": "Italian"
+  },
+  "plannerTypes": {
+    "full": "Full",
+    "focus": "Focus",
+    "minimal": "Minimal"
+  },
+  "weekDays": {
+    "monday": "Monday",
+    "sunday": "Sunday"
+  },
+  "timeFormats": {
+    "24h": "24-Hour",
+    "ampm": "AM/PM"
+  },
+  "calendarIntegrations": {
+    "none": "None",
+    "google": "Google Calendar",
+    "apple": "Apple Calendar"
+  },
+  "devices": {
+    "ipad": {
+      "portrait": "iPad (Portrait)",
+      "landscape": "iPad (Landscape)"
+    },
+    "ipad-mini": {
+      "portrait": "iPad Mini (Portrait)",
+      "landscape": "iPad Mini (Landscape)"
+    },
+    "remarkable": {
+      "portrait": "reMarkable (Portrait)",
+      "landscape": "reMarkable (Landscape)"
+    },
+    "rm-move": {
+      "portrait": "reMarkable Move (Portrait)",
+      "landscape": "reMarkable Move (Landscape)"
+    },
+    "rm-paper-pro": {
+      "portrait": "reMarkable Paper Pro (Portrait)",
+      "landscape": "reMarkable Paper Pro (Landscape)"
+    },
+    "filofax-a5": {
+      "portrait": "Filofax A5"
+    },
+    "filofax-personal": {
+      "portrait": "Filofax Personal"
+    },
+    "filofax-pocket": {
+      "portrait": "Filofax Pocket"
+    }
+  },
+  "shop": {
+    "description": "Browse our collection of digital planners and templates.",
+    "backToShop": "Back to Shop",
+    "bundle": "Bundle",
+    "allAccess": "All Access",
+    "whatsIncluded": "What's included?",
+    "accessToProducts": "Access to {count} products",
+    "includesFutureProducts": "Includes all future products",
+    "unlimitedDownloads": "Unlimited downloads",
+    "allThemesAndColors": "All themes and color variants",
+    "includedProducts": "Products in this bundle",
+    "youOwnBundle": "You own this bundle",
+    "youOwnProduct": "You own this product",
+    "goToLibrary": "Go to Library",
+    "addToCart": "Add to Cart",
+    "added": "Added!",
+    "instantDownload": "Instant digital download after purchase",
+    "includes": "Includes:",
+    "multipleTemplateLayouts": "Multiple template layouts",
+    "timeFormats": "12h and 24h time formats",
+    "calendarIntegration": "Calendar integration options",
+    "weekStartOptions": "Monday and Sunday week start options"
+  },
+  "account": {
+    "welcomeBack": "Welcome back!",
+    "orders": "Orders",
+    "totalOrders": "total orders",
+    "downloads": "Downloads",
+    "availableProducts": "available products",
+    "recentOrders": "Recent Orders",
+    "viewAll": "View all",
+    "noOrdersYet": "You haven't placed any orders yet.",
+    "order": "Order",
+    "goToDownloads": "Go to My Downloads",
+    "continueShopping": "Continue Shopping",
+    "orderHistory": "View your order history and download your purchases.",
+    "browseProducts": "Browse our products",
+    "qty": "Qty",
+    "download": "Download",
+    "invoice": "Invoice",
+    "downloadInvoice": "Download Invoice",
+    "status": {
+      "completed": "Completed",
+      "pending": "Pending",
+      "cancelled": "Cancelled",
+      "refunded": "Refunded"
+    }
+  },
+  "checkout": {
+    "success": {
+      "title": "Thank you for your order!",
+      "processingMessage": "You'll receive an email with your download links once payment is processed.",
+      "backToShop": "Back to Shop",
+      "orderConfirmed": "Order #{orderId} has been confirmed.",
+      "emailSent": "Confirmation Email Sent",
+      "emailSentMessage": "We've sent a confirmation email to {email} with your download links.",
+      "yourPurchases": "Your Purchases",
+      "filesAvailable": "files available",
+      "goToLibrary": "Go to Library",
+      "viewAllDownloads": "View all your downloads",
+      "goToAccount": "Go to My Account"
+    }
+  },
+  "reviews": {
+    "title": "Customer Reviews",
+    "writeReview": "Write a Review",
+    "noReviews": "No reviews yet. Be the first to review this product!",
+    "verifiedPurchase": "Verified Purchase",
+    "basedOn": "Based on {count} reviews",
+    "sortBy": "Sort by",
+    "sortRecent": "Most Recent",
+    "sortHighest": "Highest Rated",
+    "sortLowest": "Lowest Rated",
+    "yourRating": "Your Rating",
+    "yourName": "Your Name",
+    "yourReview": "Your Review",
+    "submitReview": "Submit Review",
+    "submitting": "Submitting...",
+    "thankYou": "Thank you for your review!",
+    "reviewPending": "Your review is pending approval.",
+    "loginToReview": "Sign in to write a review",
+    "alreadyReviewed": "You have already reviewed this product",
+    "errors": {
+      "ratingRequired": "Please select a rating",
+      "nameRequired": "Please enter your name",
+      "reviewTooShort": "Review must be at least 10 characters",
+      "submitFailed": "Failed to submit review. Please try again."
+    }
+  }
+}

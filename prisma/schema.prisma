@@ -1,0 +1,1275 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================
+// SITE (Multi-tenant foundation)
+// ============================================
+
+model Site {
+  id                     String   @id @default(uuid())
+  code                   String   @unique @db.VarChar(30) // 'lbl', 'matcare', 'clariz', 'jellybean'
+  name                   String   @db.VarChar(100)
+  domains                Json     // ['layoutsbylenny.com']
+  defaultLocale          String   @default("en") @db.VarChar(5)
+  locales                Json     @default("[\"en\"]") // ['en'] or ['nl','en','de','fr']
+  currency               String   @default("EUR") @db.VarChar(3)
+  timezone               String   @default("Europe/Amsterdam") @db.VarChar(50)
+
+  // Site type
+  siteType               String   @default("digital") @map("site_type") @db.VarChar(20) // 'digital' | 'physical'
+
+  // Feature flags
+  hasShipping            Boolean  @default(false)
+  hasDigitalDelivery     Boolean  @default(false)
+  hasMultilingual        Boolean  @default(false)
+  hasBolIntegration      Boolean  @default(false)
+  hasBundles             Boolean  @default(false)
+  hasTemplates           Boolean  @default(false)
+  hasBlog                Boolean  @default(true)
+  hasReviews             Boolean  @default(true)
+
+  // Branding
+  logoUrl                String?  @db.VarChar(500)
+  faviconUrl             String?  @db.VarChar(500)
+  primaryColor           String?  @db.VarChar(7)
+  accentColor            String?  @db.VarChar(7)
+  footerText             String?  @db.Text
+
+  // SEO
+  defaultMetaTitle       String?  @db.VarChar(200)
+  defaultMetaDescription String?  @db.VarChar(300)
+
+  // Business / Email
+  contactEmail           String?  @map("contact_email") @db.VarChar(200)
+  fromEmail              String?  @map("from_email") @db.VarChar(300)
+  companyInfo            Json?    @map("company_info")  // {name, cocNumber, vatNumber}
+  gaTrackingId           String?  @map("ga_tracking_id") @db.VarChar(50)
+
+  // Payment
+  stripeAccountId        String?  @db.VarChar(100)
+  stripeWebhookSecret    String?  @db.VarChar(200)
+
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  // Relations
+  products              Product[]
+  productTemplates      ProductTemplate[]
+  categories            Category[]
+  tags                  Tag[]
+  bundles               Bundle[]
+  slugRoutes            SlugRoute[]
+  contentPages          ContentPage[]
+  blogPosts             BlogPost[]
+  customers             Customer[]
+  orders                Order[]
+  reviews               Review[]
+  discounts             Discount[]
+  discountCodes         DiscountCode[]
+  newsletterSubscribers NewsletterSubscriber[]
+  siteSettings          SiteSetting[]
+  salesChannels         SalesChannel[]
+  shippingZones         ShippingZone[]
+  coupons               Coupon[]
+  emailTemplates        EmailTemplate[]
+  productFamilies       ProductFamily[]
+
+  @@map("site")
+}
+
+// ============================================
+// ADMIN USERS
+// ============================================
+
+model AdminUser {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique @db.VarChar(255)
+  passwordHash String   @db.VarChar(255)
+  name         String   @db.VarChar(100)
+  role         String   @default("admin") @db.VarChar(20) // 'super_admin', 'admin'
+  siteAccess   Json     @default("[]") // ['lbl','matcare'] or ['*']
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  inventoryMovements InventoryMovement[]
+
+  @@map("admin_user")
+}
+
+// ============================================
+// LANGUAGE & ROUTING SYSTEM
+// ============================================
+
+model Language {
+  id         String  @id @db.VarChar(5) // "en", "nl", "de", "fr", "es", "it"
+  name       String  @db.VarChar(50) // "English", "Nederlands", etc.
+  nativeName String  @db.VarChar(50) // "English", "Nederlands", etc.
+  isActive   Boolean @default(true)
+  sortOrder  Int     @default(0)
+
+  slugRoutes                  SlugRoute[]
+  categoryTranslations        CategoryTranslation[]
+  productTemplateTranslations ProductTemplateTranslation[]
+  productTranslations         ProductTranslation[]
+  tagTranslations             TagTranslation[]
+  bundleTranslations          BundleTranslation[]
+
+  @@map("language")
+}
+
+// Centralized routing table for all slugs
+// Provides: URL resolution, redirect support, uniqueness across all entities
+model SlugRoute {
+  id           Int      @id @default(autoincrement())
+  siteId       String
+  languageCode String   @db.VarChar(5)
+  slug         String   @db.VarChar(200)
+
+  // Target entity (only one should be set)
+  entityType   String   @db.VarChar(20) // template, product, tag, bundle
+  templateId   Int?
+  productId    Int?
+  tagId        Int?
+  bundleId     Int?
+
+  // Redirect support (for old slugs)
+  redirectToId Int?     // Points to another SlugRoute if this is a redirect
+  isPrimary    Boolean  @default(true) // Primary slug for this entity+language combo
+
+  createdAt    DateTime @default(now())
+
+  site       Site    @relation(fields: [siteId], references: [id])
+  language   Language   @relation(fields: [languageCode], references: [id])
+  template   ProductTemplate? @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  product    Product?   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  tag        Tag?       @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  bundle     Bundle?    @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  redirectTo SlugRoute? @relation("SlugRedirect", fields: [redirectToId], references: [id])
+  redirectsFrom SlugRoute[] @relation("SlugRedirect")
+
+  @@unique([siteId, languageCode, slug]) // Each slug unique per store per language
+  @@index([siteId])
+  @@index([languageCode])
+  @@index([templateId])
+  @@index([productId])
+  @@index([tagId])
+  @@index([bundleId])
+  @@index([isPrimary])
+  @@map("slugroute")
+}
+
+// ============================================
+// NEW PRODUCT SYSTEM
+// ============================================
+
+// Category for organizing products
+model Category {
+  id        Int      @id @default(autoincrement())
+  siteId    String
+  parentId  Int?
+  type      String   @default("product") @db.VarChar(20) // 'product' | 'page' | 'blog'
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  site     Site      @relation(fields: [siteId], references: [id])
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
+  children Category[] @relation("CategoryHierarchy")
+
+  translations CategoryTranslation[]
+  products     Product[]
+
+  @@index([siteId])
+  @@index([isActive])
+  @@index([parentId])
+  @@index([type])
+  @@map("category")
+}
+
+model CategoryTranslation {
+  id           Int    @id @default(autoincrement())
+  categoryId   Int
+  languageCode String @db.VarChar(5)
+  name         String @db.VarChar(100)
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  language Language @relation(fields: [languageCode], references: [id])
+
+  @@unique([categoryId, languageCode])
+  @@index([categoryId])
+  @@index([languageCode])
+  @@map("categorytranslation")
+}
+
+// ProductTemplate groups variants (e.g., "2026 Daily Planner")
+model ProductTemplate {
+  id      Int    @id @default(autoincrement())
+  siteId String
+
+  // Which file properties apply to products under this template
+  // JSON: { templateSet: true, timeFormat: true, weekStart: true, calendar: true }
+  // Stickers may have none of these (all false or empty)
+  fileProperties Json @default("{}")
+
+  // Template variables (custom fields) that products can fill in
+  // JSON: [{ key: "year", label: "Year", defaultValue?: "2026" }]
+  variables Json @default("[]")
+
+  // Default price for products created from this template (in cents)
+  defaultPriceInCents Int @default(0)
+
+  // Device and orientation for the template
+  device      String? @db.VarChar(20) // 'tablet', 'remarkable'
+  orientation String? @db.VarChar(20) // 'portrait', 'landscape'
+
+  // Variant generation configuration
+  productType       String?  @db.VarChar(20) // 'planner', 'printable', 'notebook', 'template'
+  isDated           Boolean  @default(true)
+  startYear         Int?
+  contentLanguages  String[] // ['en', 'nl', 'de', 'fr', 'es', 'it']
+  themeSelection    String   @default("all") @db.VarChar(20) // 'all', 'tablet', 'e_ink', 'filofax', or 'specific'
+  selectedThemes    String[] // theme IDs if themeSelection = 'specific'
+
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  site          Site @relation(fields: [siteId], references: [id])
+  translations  ProductTemplateTranslation[]
+  slugs         SlugRoute[]
+  products      Product[]
+  tags          ProductTemplateTag[]
+  discounts     Discount[]
+  discountCodes DiscountCode[]
+
+  @@index([siteId])
+  @@index([isActive])
+  @@index([device])
+  @@index([orientation])
+  @@map("producttemplate")
+}
+
+model ProductTemplateTranslation {
+  id             Int     @id @default(autoincrement())
+  templateId     Int
+  languageCode   String  @db.VarChar(5)
+  name           String  @db.VarChar(200) // Short name for slugs
+  title          String? @db.VarChar(200) // H1 heading on page
+  seoTitle       String? @db.VarChar(200) // Meta title for SEO
+  seoDescription String? @db.VarChar(320) // Meta description for SEO (150-160 chars recommended)
+  description    String? @db.Text
+
+  template ProductTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  language Language        @relation(fields: [languageCode], references: [id])
+
+  @@unique([templateId, languageCode])
+  @@index([templateId])
+  @@index([languageCode])
+  @@map("producttemplatetranslation")
+}
+
+// Product represents a purchasable variant (e.g., "2026 Daily Planner - Sage Green - English")
+// Products WITH a template inherit name/description/tags from the template
+// Products WITHOUT a template are standalone and must have their own name/description/tags
+model Product {
+  id      Int    @id @default(autoincrement())
+  siteId String
+
+  templateId Int? // Optional: standalone products don't have a template
+
+  // Variant properties
+  year            Int?
+  theme           String? @db.VarChar(50) // matches theme IDs from config
+  contentLanguage String? @db.VarChar(10) // 'en', 'nl', 'de', 'fr', 'es', 'it', or null for language-agnostic
+  productType     String? @db.VarChar(20) // 'planner', 'printable', 'notebook', 'template'
+  device          String? @db.VarChar(20) // 'tablet', 'remarkable'
+  orientation     String? @db.VarChar(20) // 'portrait', 'landscape'
+
+  // Values for template variables (custom fields)
+  // JSON: { "year": "2026", "device_name": "reMarkable 2" }
+  templateVariables Json @default("{}")
+
+  // Category (used by physical products)
+  categoryId Int? @map("category_id")
+
+  // Pricing
+  priceInCents Int    @default(0)
+  currency     String @default("EUR") @db.VarChar(3)
+
+  // Physical product pricing
+  compareAtPriceInCents Int?    @map("compare_at_price_in_cents")
+  costPriceInCents      Int?    @map("cost_price_in_cents")
+  vatRate               Int     @default(21) @map("vat_rate")
+
+  // Physical product identifiers
+  sku String? @db.VarChar(50)
+  ean String? @db.VarChar(20)
+
+  // Physical product logistics
+  weightGrams     Int?    @map("weight_grams")
+  hsCode          String? @map("hs_code") @db.VarChar(20)
+  countryOfOrigin String? @map("country_of_origin") @db.VarChar(2)
+
+  // Product family (groups pack sizes, e.g. 5x, 10x, 25x, 50x)
+  familyId    Int?    @map("family_id")
+  familyValue String? @map("family_value") @db.VarChar(100)
+
+  // Images (JSON array of paths relative to IMAGES_PATH)
+  images Json @default("[]")
+
+  // Video URL (single video per product, stored in S3)
+  videoUrl String? @db.VarChar(500)
+
+  // External IDs
+  etsyListingId String? @db.VarChar(100)
+
+  // Special download code (auto-generated: LBL + 8 hex chars)
+  downloadCode String @unique @db.VarChar(12)
+
+  isPublished Boolean   @default(false)
+  isFeatured  Boolean   @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  site         Site                @relation(fields: [siteId], references: [id])
+  template     ProductTemplate?     @relation(fields: [templateId], references: [id])
+  category     Category?            @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  family       ProductFamily?       @relation(fields: [familyId], references: [id], onDelete: SetNull)
+  translations ProductTranslation[] // Required for standalone products, optional override for templated products
+  slugs        SlugRoute[]
+  files        ProductFile[]
+  tags         ProductTag[]         // Only used for standalone products (no template)
+  bundleItems  BundleItem[]
+  orderItems   OrderItem[]
+  access       CustomerAccess[]
+  discounts    Discount[]
+  reviews      Review[]
+  variants     ProductVariant[]
+  inventory    Inventory?
+  channelListings ChannelListing[]
+  inventoryMovements InventoryMovement[]
+
+  @@index([siteId])
+  @@index([templateId])
+  @@index([categoryId])
+  @@index([familyId])
+  @@index([downloadCode])
+  @@index([etsyListingId])
+  @@index([isPublished])
+  @@index([isFeatured])
+  @@index([year])
+  @@index([theme])
+  @@index([contentLanguage])
+  @@index([productType])
+  @@index([device])
+  @@index([sku])
+  @@map("product")
+}
+
+model ProductTranslation {
+  id             Int     @id @default(autoincrement())
+  productId      Int
+  languageCode   String  @db.VarChar(5)
+  name           String? @db.VarChar(200) // Short name for slugs (can inherit from template)
+  title          String? @db.VarChar(200) // H1 heading on page
+  seoTitle       String? @db.VarChar(200) // Meta title for SEO
+  seoDescription String? @db.VarChar(320) // Meta description for SEO (150-160 chars recommended)
+  description    String? @db.Text
+
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  language Language @relation(fields: [languageCode], references: [id])
+
+  @@unique([productId, languageCode])
+  @@index([productId])
+  @@index([languageCode])
+  @@map("producttranslation")
+}
+
+// ProductFile represents a downloadable file variant
+model ProductFile {
+  id        Int @id @default(autoincrement())
+  productId Int
+
+  // File variant properties (matches file-utils params)
+  templateSet String? @db.VarChar(20) // full, focus, minimal
+  timeFormat  String? @db.VarChar(10) // 24h, ampm
+  weekStart   String? @db.VarChar(10) // monday, sunday
+  calendar    String? @db.VarChar(20) // none, google, apple
+
+  // Actual file location (relative to FILES_PATH)
+  filePath String @db.VarChar(500)
+  fileName String @db.VarChar(255) // display name
+  fileSize Int? // bytes
+
+  sortOrder Int     @default(0)
+  isActive  Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, templateSet, timeFormat, weekStart, calendar])
+  @@index([productId])
+  @@index([isActive])
+  @@map("productfile")
+}
+
+// Tag for filtering/search
+model Tag {
+  id        Int      @id @default(autoincrement())
+  siteId    String
+  createdAt DateTime @default(now())
+
+  site         Site @relation(fields: [siteId], references: [id])
+  translations TagTranslation[]
+  slugs        SlugRoute[]
+  products     ProductTag[]          // For standalone products
+  templates    ProductTemplateTag[]  // For templated products (preferred)
+  blogPosts    BlogPostTag[]
+
+  @@index([siteId])
+  @@map("tag")
+}
+
+model TagTranslation {
+  id           Int    @id @default(autoincrement())
+  tagId        Int
+  languageCode String @db.VarChar(5)
+  name         String @db.VarChar(100)
+
+  tag      Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  language Language @relation(fields: [languageCode], references: [id])
+
+  @@unique([tagId, languageCode])
+  @@index([tagId])
+  @@index([languageCode])
+  @@map("tagtranslation")
+}
+
+model ProductTag {
+  productId Int
+  tagId     Int
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([productId, tagId])
+  @@map("producttag")
+}
+
+// Tags for ProductTemplate - all products under the template inherit these tags
+model ProductTemplateTag {
+  templateId Int
+  tagId      Int
+
+  template ProductTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  tag      Tag             @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([templateId, tagId])
+  @@map("producttemplatetag")
+}
+
+// Bundle groups products for combined purchase
+model Bundle {
+  id      Int    @id @default(autoincrement())
+  siteId String
+
+  // Pricing: either discountPercent OR fixedPriceInCents (not both)
+  discountPercent   Int? // e.g., 20 for 20% off total
+  fixedPriceInCents Int?
+  currency          String @default("EUR") @db.VarChar(3)
+
+  // Theme for PDF generation (e.g., download link PDFs)
+  theme String? @db.VarChar(50)
+
+  // Content language - which shop this bundle appears in (null = all shops)
+  contentLanguage String? @db.VarChar(10)
+
+  // Special flag: grants ALL current + future published products
+  isAllAccess Boolean @default(false)
+
+  // External IDs
+  etsyListingId String? @db.VarChar(100)
+
+  // Special download code
+  downloadCode String @unique @db.VarChar(12)
+
+  images Json @default("[]")
+
+  isPublished Boolean   @default(false)
+  isFeatured  Boolean   @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  site         Site @relation(fields: [siteId], references: [id])
+  translations BundleTranslation[]
+  slugs        SlugRoute[]
+  items        BundleItem[]
+  orderItems   OrderItem[]
+  access       CustomerAccess[]
+  discounts    Discount[]
+
+  @@index([siteId])
+  @@index([downloadCode])
+  @@index([isPublished])
+  @@index([isFeatured])
+  @@index([isAllAccess])
+  @@map("bundle")
+}
+
+model BundleTranslation {
+  id               Int     @id @default(autoincrement())
+  bundleId         Int
+  languageCode     String  @db.VarChar(5)
+  name             String  @db.VarChar(200) // Short name for slugs
+  title            String? @db.VarChar(200) // H1 heading on page
+  shortDescription String? @db.VarChar(200) // Short description for cards
+  seoTitle         String? @db.VarChar(200) // Meta title for SEO
+  seoDescription   String? @db.VarChar(320) // Meta description for SEO (150-160 chars recommended)
+  description      String? @db.Text
+
+  bundle   Bundle   @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  language Language @relation(fields: [languageCode], references: [id])
+
+  @@unique([bundleId, languageCode])
+  @@index([bundleId])
+  @@index([languageCode])
+  @@map("bundletranslation")
+}
+
+// BundleItem includes specific products
+model BundleItem {
+  id         Int  @id @default(autoincrement())
+  bundleId   Int
+  productId  Int?
+
+  bundle   Bundle    @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  product  Product?  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([bundleId])
+  @@index([productId])
+  @@map("bundleitem")
+}
+
+// ============================================
+// CUSTOMER SYSTEM
+// ============================================
+
+// Customer account (created on first purchase or magic link login)
+model Customer {
+  id             Int       @id @default(autoincrement())
+  siteId         String
+  email          String    @db.VarChar(255)
+  billingCountry String?   @db.VarChar(2) // ISO 3166-1 alpha-2 country code (for OSS VAT)
+  createdAt      DateTime  @default(now())
+  lastLoginAt    DateTime?
+
+  site              Site @relation(fields: [siteId], references: [id])
+  sessions          CustomerSession[]
+  verificationCodes VerificationCode[]
+  access            CustomerAccess[]
+  orders            Order[]
+  reviews           Review[]
+
+  @@unique([siteId, email]) // Same email on different stores = different customers
+  @@index([siteId])
+  @@index([email])
+  @@map("customer")
+}
+
+// CustomerSession for auth (30-day sessions)
+model CustomerSession {
+  id         Int       @id @default(autoincrement())
+  customerId Int
+  token      String    @unique @db.VarChar(64)
+  expiresAt  DateTime
+  createdAt  DateTime  @default(now())
+  usedAt     DateTime?
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([customerId])
+  @@index([expiresAt])
+  @@map("customersession")
+}
+
+// VerificationCode for email code login (10-minute codes)
+model VerificationCode {
+  id         Int      @id @default(autoincrement())
+  customerId Int
+  code       String   @db.VarChar(6)
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([code])
+  @@index([expiresAt])
+  @@map("verificationcode")
+}
+
+// CustomerAccess tracks what products/bundles a customer owns
+model CustomerAccess {
+  id         Int      @id @default(autoincrement())
+  customerId Int
+  productId  Int?
+  bundleId   Int?
+  grantedAt  DateTime @default(now())
+  grantedBy  String   @default("purchase") @db.VarChar(20) // purchase, admin, gift
+  orderId    Int?
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  product  Product? @relation(fields: [productId], references: [id])
+  bundle   Bundle?  @relation(fields: [bundleId], references: [id])
+  order    Order?   @relation(fields: [orderId], references: [id])
+
+  @@unique([customerId, productId])
+  @@unique([customerId, bundleId])
+  @@index([customerId])
+  @@index([productId])
+  @@index([bundleId])
+  @@map("customeraccess")
+}
+
+// ============================================
+// CUSTOMER REVIEWS
+// ============================================
+
+model Review {
+  id               Int       @id @default(autoincrement())
+  siteId          String
+  productId        Int
+  customerId       Int?      // Nullable - reviews without login allowed for seeding
+  rating           Int       // 1-5 stars
+  reviewerName     String    @db.VarChar(100)
+  reviewText       String    @db.Text
+  language         String?   @db.VarChar(5) // Language code when review was submitted
+  verifiedPurchase Boolean   @default(false)
+  approved         Boolean   @default(false)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  site         Site               @relation(fields: [siteId], references: [id])
+  product      Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  customer     Customer?           @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  translations ReviewTranslation[]
+
+  @@index([siteId])
+  @@index([productId])
+  @@index([customerId])
+  @@index([approved])
+  @@index([rating])
+  @@index([createdAt])
+  @@map("review")
+}
+
+model ReviewTranslation {
+  id           Int    @id @default(autoincrement())
+  reviewId     Int
+  languageCode String @db.VarChar(5)
+  reviewText   String @db.Text
+
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@unique([reviewId, languageCode])
+  @@index([reviewId])
+  @@map("review_translation")
+}
+
+// ============================================
+// ORDER SYSTEM (unified: Etsy + shop + manual)
+// ============================================
+
+model Order {
+  id            Int      @id @default(autoincrement())
+  siteId        String
+  orderNumber   String?  @db.VarChar(20) // Customer-facing order number (e.g., LBL-10423-K7)
+  customerId    Int?
+  customerEmail String  @db.VarChar(255)
+
+  // Source tracking
+  source     String  @db.VarChar(20) // etsy, shop, admin
+  externalId String? @db.VarChar(100) // Etsy order ID, Mollie payment ID, etc.
+
+  // Billing address (for OSS VAT reporting)
+  billingCountry String? @db.VarChar(2) // ISO 3166-1 alpha-2 country code
+
+  // Totals (in cents)
+  subtotalInCents Int
+  discountInCents Int    @default(0)
+  totalInCents    Int
+  currency        String @default("EUR") @db.VarChar(3)
+
+  // Discount code used (if any)
+  discountCodeId Int?
+  discountCodeApplied String? @db.VarChar(50) // Store the code string for reference
+
+  status String @default("completed") @db.VarChar(20) // pending, completed, refunded
+
+  notes     String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  site     Site            @relation(fields: [siteId], references: [id])
+  customer Customer?        @relation(fields: [customerId], references: [id])
+  items    OrderItem[]
+  access   CustomerAccess[]
+
+  @@unique([siteId, orderNumber])
+  @@index([siteId])
+  @@index([customerId])
+  @@index([discountCodeId])
+  @@index([customerEmail])
+  @@index([source])
+  @@index([externalId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([billingCountry])
+  @@map("order")
+}
+
+model OrderItem {
+  id           Int @id @default(autoincrement())
+  orderId      Int
+  productId    Int?
+  bundleId     Int?
+  quantity     Int @default(1)
+  priceInCents Int
+
+  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id])
+  bundle  Bundle?  @relation(fields: [bundleId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
+  @@index([bundleId])
+  @@map("orderitem")
+}
+
+// ============================================
+// DISCOUNT SYSTEM
+// ============================================
+
+// Discount applies automatic price reductions
+model Discount {
+  id          Int      @id @default(autoincrement())
+  siteId     String
+  name        String   @db.VarChar(100) // Internal name for admin
+  description String?  @db.Text         // Optional description
+
+  // Discount type: percentage or fixed amount
+  type           String @db.VarChar(20) // "percentage" or "fixed"
+  valueInCents   Int?   // For fixed discounts (in cents)
+  valuePercent   Int?   // For percentage discounts (e.g., 20 for 20%)
+
+  // Scope: what this discount applies to
+  scope      String @db.VarChar(20) // "product", "bundle", "all"
+  productId  Int?   // If scope is "product"
+  bundleId   Int?   // If scope is "bundle"
+
+  // Exclusions for "all" scope
+  excludeBundles         Boolean @default(false) // Exclude all bundles (products only)
+  excludeAllAccessBundle Boolean @default(false) // Exclude all-access bundles only
+  excludeProducts        Boolean @default(false) // Exclude all products (bundles only)
+
+  // Targeting filters (optional - null means all)
+  targetYear       Int?    // Only apply to products with this year
+  targetDevice     String? @db.VarChar(30) // Only apply to products with this device
+  targetTemplateId Int?    // Only apply to products from this template
+
+  // Validity period
+  startsAt DateTime?
+  endsAt   DateTime?
+
+  isActive  Boolean  @default(true)
+  priority  Int      @default(0) // Higher priority discounts applied first
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  site           Site            @relation(fields: [siteId], references: [id])
+  product        Product?         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  bundle         Bundle?          @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  targetTemplate ProductTemplate? @relation(fields: [targetTemplateId], references: [id], onDelete: SetNull)
+
+  @@index([siteId])
+  @@index([scope])
+  @@index([productId])
+  @@index([bundleId])
+  @@index([targetYear])
+  @@index([targetDevice])
+  @@index([targetTemplateId])
+  @@index([isActive])
+  @@index([startsAt])
+  @@index([endsAt])
+  @@map("discount")
+}
+
+// DiscountCode is a redeemable code entered at checkout
+model DiscountCode {
+  id          Int      @id @default(autoincrement())
+  siteId     String
+  code        String   @db.VarChar(50) // The code customers enter
+  name        String   @db.VarChar(100)        // Internal name for admin
+  description String?  @db.Text
+
+  // Discount type: percentage or fixed amount
+  type           String @db.VarChar(20) // "percentage" or "fixed"
+  valueInCents   Int?   // For fixed discounts (in cents)
+  valuePercent   Int?   // For percentage discounts
+
+  // Usage limits
+  maxUses      Int?     // Max total uses (null = unlimited)
+  usedCount    Int      @default(0)
+  maxUsesPerCustomer Int? // Max uses per customer (null = unlimited)
+
+  // Minimum order value to apply
+  minOrderInCents Int?
+
+  // Exclusions
+  excludeBundles         Boolean @default(false) // Exclude all bundles (products only)
+  excludeAllAccessBundle Boolean @default(false) // Exclude all-access bundles only
+  excludeProducts        Boolean @default(false) // Exclude all products (bundles only)
+
+  // Targeting filters (optional - null means all)
+  targetYear       Int?    // Only apply to products with this year
+  targetDevice     String? @db.VarChar(30) // Only apply to products with this device
+  targetTemplateId Int?    // Only apply to products from this template
+
+  // Validity period
+  startsAt DateTime?
+  endsAt   DateTime?
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  site           Site @relation(fields: [siteId], references: [id])
+  usages         DiscountCodeUsage[]
+  targetTemplate ProductTemplate?    @relation(fields: [targetTemplateId], references: [id], onDelete: SetNull)
+
+  @@unique([siteId, code]) // Code unique per store
+  @@index([siteId])
+  @@index([code])
+  @@index([targetYear])
+  @@index([targetDevice])
+  @@index([targetTemplateId])
+  @@index([isActive])
+  @@index([startsAt])
+  @@index([endsAt])
+  @@map("discountcode")
+}
+
+// Track discount code usage
+model DiscountCodeUsage {
+  id             Int      @id @default(autoincrement())
+  discountCodeId Int
+  orderId        Int
+  customerId     Int?
+  usedAt         DateTime @default(now())
+
+  discountCode DiscountCode @relation(fields: [discountCodeId], references: [id], onDelete: Cascade)
+
+  @@index([discountCodeId])
+  @@index([orderId])
+  @@index([customerId])
+  @@map("discountcodeusage")
+}
+
+// ============================================
+// DOWNLOAD TRACKING
+// ============================================
+
+model DownloadLog {
+  id            Int      @id @default(autoincrement())
+  customerId    Int?
+  productId     Int?
+  accessCode    String?  @db.VarChar(12) // product or bundle downloadCode (optional for customer downloads)
+  productFileId Int?
+  fileKey       String   @db.VarChar(150) // for backwards compatibility
+  ipAddress     String?  @db.VarChar(45)
+  userAgent     String?  @db.Text
+  downloadedAt  DateTime @default(now())
+
+  @@index([customerId])
+  @@index([productId])
+  @@index([accessCode])
+  @@index([productFileId])
+  @@index([downloadedAt])
+  @@map("downloadlog")
+}
+
+// ============================================
+// NEWSLETTER SUBSCRIBERS
+// ============================================
+
+model NewsletterSubscriber {
+  id             Int       @id @default(autoincrement())
+  siteId         String
+  email          String    @db.VarChar(255)
+  locale         String    @default("en") @db.VarChar(5)
+  source         String    @default("website") @db.VarChar(20) // website, free-sample
+  isActive       Boolean   @default(true)
+  subscribedAt   DateTime  @default(now())
+  unsubscribedAt DateTime?
+
+  site  Site @relation(fields: [siteId], references: [id])
+
+  @@unique([siteId, email]) // Email unique per store
+  @@index([siteId])
+  @@index([email])
+  @@index([isActive])
+  @@index([source])
+  @@map("newslettersubscriber")
+}
+
+// ============================================
+// SITE SETTINGS (per-store)
+// ============================================
+
+model SiteSetting {
+  siteId    String   @db.VarChar(100)
+  key       String   @db.VarChar(100)
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt
+
+  site  Site @relation(fields: [siteId], references: [id])
+
+  @@id([siteId, key])
+  @@map("sitesetting")
+}
+
+// ============================================
+// CONTENT PAGES
+// ============================================
+
+model ContentPage {
+  id                 Int      @id @default(autoincrement())
+  siteId            String
+  slug               String   @db.VarChar(50) // contact, about, terms, home
+  pageType           String   @default("page") @db.VarChar(20) // page, home
+  isPublished        Boolean  @default(true)
+  bannerImage        String?  @db.VarChar(500) // Default desktop banner
+  mobileBannerImage  String?  @db.VarChar(500) // Default mobile banner
+  settings           String?  @db.Text // JSON for page-specific settings
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  site         Site @relation(fields: [siteId], references: [id])
+  translations ContentPageTranslation[]
+
+  @@unique([siteId, slug]) // Slug unique per store
+  @@index([siteId])
+  @@map("contentpage")
+}
+
+model ContentPageTranslation {
+  id                Int         @id @default(autoincrement())
+  pageId            Int
+  languageCode      String      @db.VarChar(5) // en, nl
+  title             String      @db.VarChar(200)
+  metaDescription   String?     @db.VarChar(300)
+  content           String      @db.Text // HTML content from rich text editor
+  bannerImage       String?     @db.VarChar(500) // Override desktop banner for this language
+  mobileBannerImage String?     @db.VarChar(500) // Override mobile banner for this language
+
+  page ContentPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@unique([pageId, languageCode])
+  @@map("contentpagetranslation")
+}
+
+// ============================================
+// BLOG POSTS
+// ============================================
+
+model BlogPost {
+  id            Int       @id @default(autoincrement())
+  siteId        String
+  slug          String    @db.VarChar(100)
+  writer        String    @default("lenny") @db.VarChar(20)
+  isPublished   Boolean   @default(false)
+  featuredImage String?   @db.VarChar(500)
+  publishedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  site         Site @relation(fields: [siteId], references: [id])
+  translations BlogPostTranslation[]
+  tags         BlogPostTag[]
+
+  @@unique([siteId, slug]) // Slug unique per store
+  @@index([siteId])
+  @@index([isPublished, publishedAt])
+  @@map("blogpost")
+}
+
+model BlogPostTranslation {
+  id              Int      @id @default(autoincrement())
+  postId          Int
+  languageCode    String   @db.VarChar(5)
+  title           String   @db.VarChar(200)
+  metaDescription String?  @db.VarChar(300)
+  excerpt         String?  @db.Text
+  content         String   @db.Text // HTML content from rich text editor
+  featuredImage   String?  @db.Text
+
+  post BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, languageCode])
+  @@map("blogposttranslation")
+}
+
+model BlogPostTag {
+  postId Int
+  tagId  Int
+
+  post BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag  Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, tagId])
+  @@map("blogposttag")
+}
+
+// ============================================
+// PRODUCT VARIANTS (for physical products)
+// ============================================
+
+model ProductVariant {
+  id             Int      @id @default(autoincrement())
+  productId      Int
+  sku            String?  @db.VarChar(50)
+  ean            String?  @db.VarChar(20)
+  name           String   @db.VarChar(100) // e.g. '50-pack', 'Large'
+  priceOverride  Int?     // Override price in cents (null = use product price)
+  weightGrams    Int?
+  isActive       Boolean  @default(true)
+  sortOrder      Int      @default(0)
+
+  product          Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+  inventory        Inventory?
+  channelListings  ChannelListing[]
+  inventoryMovements InventoryMovement[]
+
+  @@unique([productId, sku])
+  @@map("product_variant")
+}
+
+// ============================================
+// PRODUCT FAMILIES (groups pack sizes for Bol.com)
+// ============================================
+
+model ProductFamily {
+  id          Int      @id @default(autoincrement())
+  siteId      String   @map("site_id")
+  name        String   @db.VarChar(200)
+  description String?  @db.Text
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  site     Site      @relation(fields: [siteId], references: [id])
+  products Product[]
+
+  @@index([siteId])
+  @@map("product_family")
+}
+
+// ============================================
+// INVENTORY
+// ============================================
+
+model Inventory {
+  id                Int      @id @default(autoincrement())
+  productId         Int?     @unique
+  variantId         Int?     @unique
+  quantityOnHand    Int      @default(0)
+  quantityReserved  Int      @default(0)
+  lowStockThreshold Int      @default(5)
+  updatedAt         DateTime @updatedAt
+
+  product Product?        @relation(fields: [productId], references: [id])
+  variant ProductVariant? @relation(fields: [variantId], references: [id])
+
+  @@map("inventory")
+}
+
+model InventoryMovement {
+  id             Int      @id @default(autoincrement())
+  productId      Int
+  variantId      Int?
+  quantityChange Int      // +5 restock, -1 sale
+  type           String   @db.VarChar(20) // 'sale','return','adjustment'
+  referenceType  String?  @db.VarChar(20) // 'order','return'
+  referenceId    Int?
+  notes          String?  @db.Text
+  createdBy      Int?
+  createdAt      DateTime @default(now())
+
+  product Product        @relation(fields: [productId], references: [id])
+  variant ProductVariant? @relation(fields: [variantId], references: [id])
+  user    AdminUser?     @relation(fields: [createdBy], references: [id])
+
+  @@map("inventory_movement")
+}
+
+// ============================================
+// SALES CHANNELS (Bol.com integration)
+// ============================================
+
+model SalesChannel {
+  id              Int      @id @default(autoincrement())
+  siteId         String
+  type            String   @db.VarChar(20) // 'bol', 'webshop'
+  code            String   @unique @db.VarChar(50) // 'matcare_bol_nl'
+  name            String   @db.VarChar(100)
+  country         String?  @db.VarChar(2)
+
+  // Bol API credentials
+  apiClientId     String?  @db.VarChar(255)
+  apiClientSecret String?  @db.VarChar(255)
+
+  isLvb           Boolean  @default(false)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  site     Site            @relation(fields: [siteId], references: [id])
+  listings ChannelListing[]
+  syncLogs BolSyncLog[]
+
+  @@map("sales_channel")
+}
+
+model ChannelListing {
+  id              Int      @id @default(autoincrement())
+  channelId       Int
+  productId       Int
+  variantId       Int?
+
+  externalOfferId String?  @db.VarChar(50)
+  priceInCents    Int
+  deliveryCode    String?  @db.VarChar(20)
+
+  stockSyncedAt   DateTime?
+  lastSyncError   String?   @db.Text
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  channel  SalesChannel   @relation(fields: [channelId], references: [id])
+  product  Product        @relation(fields: [productId], references: [id])
+  variant  ProductVariant? @relation(fields: [variantId], references: [id])
+
+  @@unique([channelId, productId, variantId])
+  @@map("channel_listing")
+}
+
+model BolSyncLog {
+  id            Int       @id @default(autoincrement())
+  channelId     Int
+  syncType      String    @db.VarChar(30) // 'orders','stock','offers'
+  status        String    @db.VarChar(20) // 'running','completed','failed'
+  recordsSynced Int       @default(0)
+  errorMessage  String?   @db.Text
+  startedAt     DateTime  @default(now())
+  completedAt   DateTime?
+
+  channel SalesChannel @relation(fields: [channelId], references: [id])
+
+  @@map("bol_sync_log")
+}
+
+// ============================================
+// SHIPPING & FULFILLMENT
+// ============================================
+
+model ShippingZone {
+  id        Int     @id @default(autoincrement())
+  siteId    String
+  name      String  @db.VarChar(100)
+  countries Json    // ['NL'] or ['BE']
+  isActive  Boolean @default(true)
+
+  site  Site          @relation(fields: [siteId], references: [id])
+  rates ShippingRate[]
+
+  @@map("shipping_zone")
+}
+
+model ShippingRate {
+  id              Int      @id @default(autoincrement())
+  zoneId          Int
+  name            String   @db.VarChar(100) // 'Standard', 'Letterbox', 'Parcel'
+  minWeightGrams  Int?
+  maxWeightGrams  Int?
+  priceInCents    Int
+  freeAboveInCents Int?    // Free shipping threshold in cents
+  carrier         String?  @db.VarChar(20) // 'postnl','dhl'
+  carrierService  String?  @db.VarChar(30) // 'mailbox','parcel'
+  isDefault       Boolean  @default(false)
+  sortOrder       Int      @default(0)
+
+  zone ShippingZone @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+
+  @@map("shipping_rate")
+}
+
+// ============================================
+// COUPONS (per-store)
+// ============================================
+
+model Coupon {
+  id              Int       @id @default(autoincrement())
+  siteId         String
+  code            String    @db.VarChar(50)
+  type            String    @db.VarChar(20) // 'percentage','fixed_amount','free_shipping'
+  valueInCents    Int       // e.g. 1000 = 10% or EUR 10.00
+  minOrderInCents Int?
+  maxUses         Int?
+  timesUsed       Int       @default(0)
+  validFrom       DateTime?
+  validUntil      DateTime?
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  site  Site @relation(fields: [siteId], references: [id])
+
+  @@unique([siteId, code])
+  @@map("coupon")
+}
+
+// ============================================
+// EMAIL TEMPLATES (per-store)
+// ============================================
+
+model EmailTemplate {
+  id        Int     @id @default(autoincrement())
+  siteId    String
+  type      String  @db.VarChar(50)
+  // 'order_confirmation','shipping_notification','download_ready',
+  // 'review_request','password_reset','welcome','return_confirmation'
+  locale    String  @db.VarChar(5)
+  subject   String  @db.VarChar(300) // Supports {{order_number}} etc.
+  bodyHtml  String  @db.Text // With {{variable}} placeholders
+  isActive  Boolean @default(true)
+  updatedAt DateTime @updatedAt
+
+  site  Site @relation(fields: [siteId], references: [id])
+
+  @@unique([siteId, type, locale])
+  @@map("email_template")
+}

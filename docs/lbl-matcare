@@ -1,0 +1,873 @@
+# Lenx Platform — Unified Multi-Tenant Schema
+
+## Architecture Decisions
+
+- **One codebase, one deployment, one database**
+- Domain-based routing → store context
+- Every tenant-specific table has `store_id`
+- Translation-ready from day one (even single-locale stores)
+- Bol.com orders pulled in via sync worker, same orders table
+- Digital delivery (LBL) and physical shipping (Mat Care, Clariz, Jelly Bean) coexist
+
+---
+
+## Store & Tenant Layer
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ store                                                   │
+├─────────────────────────────────────────────────────────┤
+│ id              UUID PRIMARY KEY                        │
+│ code            VARCHAR(30) UNIQUE  -- 'lbl', 'matcare' │
+│ name            VARCHAR(100)        -- 'Layouts by Lenny│
+│ domains         JSONB               -- ['layoutsbylenny │
+│                                        .com']           │
+│ default_locale  VARCHAR(5)          -- 'en'             │
+│ locales         JSONB               -- ['en']           │
+│ currency        VARCHAR(3)          -- 'EUR'            │
+│ timezone        VARCHAR(50)         -- 'Europe/Amsterdam│
+│                                                         │
+│ -- Feature flags                                        │
+│ has_shipping          BOOLEAN DEFAULT false              │
+│ has_digital_delivery  BOOLEAN DEFAULT false              │
+│ has_multilingual      BOOLEAN DEFAULT false              │
+│ has_bol_integration   BOOLEAN DEFAULT false              │
+│ has_bundles           BOOLEAN DEFAULT false              │
+│ has_templates         BOOLEAN DEFAULT false  -- LBL only │
+│ has_blog              BOOLEAN DEFAULT true               │
+│ has_reviews           BOOLEAN DEFAULT true               │
+│                                                         │
+│ -- Branding (loaded per domain)                         │
+│ logo_url        VARCHAR(500)                            │
+│ favicon_url     VARCHAR(500)                            │
+│ primary_color   VARCHAR(7)          -- '#1a1a2e'        │
+│ accent_color    VARCHAR(7)                              │
+│ footer_text     TEXT                                    │
+│                                                         │
+│ -- SEO defaults                                         │
+│ default_meta_title       VARCHAR(200)                   │
+│ default_meta_description VARCHAR(300)                   │
+│                                                         │
+│ -- Payment                                              │
+│ stripe_account_id    VARCHAR(100)                       │
+│ stripe_webhook_secret VARCHAR(200)                      │
+│                                                         │
+│ -- Shipping config (only if has_shipping)               │
+│ shipping_config  JSONB  -- rates, zones, carriers, etc. │
+│                                                         │
+│ created_at      TIMESTAMPTZ DEFAULT now()               │
+│ updated_at      TIMESTAMPTZ                             │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Example store configs:**
+
+```json
+// LBL
+{
+  "code": "lbl",
+  "domains": ["layoutsbylenny.com"],
+  "locales": ["en"],
+  "has_shipping": false,
+  "has_digital_delivery": true,
+  "has_templates": true,
+  "has_bundles": true,
+  "has_bol_integration": false
+}
+
+// Mat Care
+{
+  "code": "matcare",
+  "domains": ["matcare.nl", "matcare.com"],
+  "locales": ["nl", "en", "de", "fr"],
+  "has_shipping": true,
+  "has_digital_delivery": false,
+  "has_templates": false,
+  "has_bundles": true,
+  "has_bol_integration": true
+}
+
+// Clariz
+{
+  "code": "clariz",
+  "domains": ["clariz.nl"],
+  "locales": ["nl"],
+  "has_shipping": true,
+  "has_digital_delivery": false,
+  "has_templates": false,
+  "has_bundles": false,
+  "has_bol_integration": true
+}
+
+// Jelly Bean
+{
+  "code": "jellybean",
+  "domains": ["jellybeanbeauty.nl"],
+  "locales": ["nl"],
+  "has_shipping": true,
+  "has_digital_delivery": false,
+  "has_templates": false,
+  "has_bundles": false,
+  "has_bol_integration": true
+}
+```
+
+---
+
+## Localization
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ language                                                │
+├─────────────────────────────────────────────────────────┤
+│ code          VARCHAR(5) PRIMARY KEY  -- 'nl', 'en'     │
+│ name          VARCHAR(50)             -- 'Dutch'        │
+│ native_name   VARCHAR(50)             -- 'Nederlands'   │
+│ is_active     BOOLEAN DEFAULT true                      │
+│ sort_order    INT DEFAULT 0                             │
+└─────────────────────────────────────────────────────────┘
+```
+
+Seeded with: nl, en, de, fr (expandable). Each store references which locales it uses via `store.locales`.
+
+---
+
+## URL Routing
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ slug_route                                              │
+├─────────────────────────────────────────────────────────┤
+│ id             SERIAL PRIMARY KEY                       │
+│ store_id       UUID REFERENCES store(id)                │
+│ locale         VARCHAR(5) REFERENCES language(code)     │
+│ slug           VARCHAR(200)                             │
+│ entity_type    VARCHAR(20)  -- 'product','category',    │
+│                                'page','blog','template',│
+│                                'bundle','tag'           │
+│ entity_id      INT                                      │
+│ redirect_to_id INT REFERENCES slug_route(id)            │
+│ is_primary     BOOLEAN DEFAULT true                     │
+│ created_at     TIMESTAMPTZ DEFAULT now()                │
+│                                                         │
+│ UNIQUE(store_id, locale, slug)                          │
+└─────────────────────────────────────────────────────────┘
+```
+
+This gives clean URLs per store per language:
+- `matcare.com/nl/producten/ovulatietest` → product, locale nl
+- `matcare.com/en/products/ovulation-test` → same product, locale en
+- `layoutsbylenny.com/planners/2026-daily` → product, locale en (no prefix)
+
+---
+
+## Products
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ category                                                │
+├─────────────────────────────────────────────────────────┤
+│ id            SERIAL PRIMARY KEY                        │
+│ store_id      UUID REFERENCES store(id)                 │
+│ parent_id     INT REFERENCES category(id)               │
+│ image_url     VARCHAR(500)                              │
+│ sort_order    INT DEFAULT 0                             │
+│ is_active     BOOLEAN DEFAULT true                      │
+│ created_at    TIMESTAMPTZ DEFAULT now()                 │
+│ updated_at    TIMESTAMPTZ                               │
+└─────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────┐
+│ category_translation                                    │
+├─────────────────────────────────────────────────────────┤
+│ id             SERIAL PRIMARY KEY                       │
+│ category_id    INT REFERENCES category(id) ON DELETE CASCADE │
+│ locale         VARCHAR(5) REFERENCES language(code)     │
+│ name           VARCHAR(100)                             │
+│ description    TEXT                                     │
+│ meta_title     VARCHAR(200)                             │
+│ meta_description VARCHAR(300)                           │
+│                                                         │
+│ UNIQUE(category_id, locale)                             │
+└─────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────┐
+│ product                                                 │
+├─────────────────────────────────────────────────────────┤
+│ id              SERIAL PRIMARY KEY                      │
+│ store_id        UUID REFERENCES store(id)               │
+│ category_id     INT REFERENCES category(id)             │
+│ sku             VARCHAR(50)                             │
+│ ean             VARCHAR(20)                             │
+│                                                         │
+│ -- Pricing                                              │
+│ price           DECIMAL(10,2)                           │
+│ compare_at_price DECIMAL(10,2)  -- strikethrough price  │
+│ cost_price      DECIMAL(10,2)   -- purchase/COGS        │
+│ vat_rate        DECIMAL(5,2) DEFAULT 21.00              │
+│                                                         │
+│ -- Product type                                         │
+│ product_type    VARCHAR(20) DEFAULT 'physical'          │
+│                 -- 'physical', 'digital', 'template'    │
+│                                                         │
+│ -- Physical product fields (nullable)                   │
+│ weight_grams    INT                                     │
+│ hs_code         VARCHAR(20)   -- customs code           │
+│ country_of_origin VARCHAR(2)                            │
+│                                                         │
+│ -- Digital product fields (nullable)                    │
+│ file_url        VARCHAR(500)  -- S3 download path       │
+│ file_size_bytes BIGINT                                  │
+│                                                         │
+│ -- Images                                               │
+│ images          JSONB DEFAULT '[]'                      │
+│                 -- [{url, alt, sort_order}]              │
+│                                                         │
+│ -- Flags                                                │
+│ is_active       BOOLEAN DEFAULT true                    │
+│ is_featured     BOOLEAN DEFAULT false                   │
+│ sort_order      INT DEFAULT 0                           │
+│                                                         │
+│ created_at      TIMESTAMPTZ DEFAULT now()               │
+│ updated_at      TIMESTAMPTZ                             │
+│                                                         │
+│ UNIQUE(store_id, sku)                                   │
+└─────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────┐
+│ product_translation                                     │
+├─────────────────────────────────────────────────────────┤
+│ id                  SERIAL PRIMARY KEY                  │
+│ product_id          INT REFERENCES product(id) ON DELETE CASCADE │
+│ locale              VARCHAR(5) REFERENCES language(code)│
+│ name                VARCHAR(200)                        │
+│ short_description   TEXT                                │
+│ description         TEXT        -- rich text / HTML      │
+│ meta_title          VARCHAR(200)                        │
+│ meta_description    VARCHAR(300)                        │
+│ features            JSONB       -- bullet points etc.   │
+│                                                         │
+│ UNIQUE(product_id, locale)                              │
+└─────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────┐
+│ product_tag                                             │
+├─────────────────────────────────────────────────────────┤
+│ id             SERIAL PRIMARY KEY                       │
+│ store_id       UUID REFERENCES store(id)                │
+│ slug           VARCHAR(100)                             │
+│ is_active      BOOLEAN DEFAULT true                     │
+└─────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────┐
+│ product_tag_translation                                 │
+├─────────────────────────────────────────────────────────┤
+│ id             SERIAL PRIMARY KEY                       │
+│ tag_id         INT REFERENCES product_tag(id) ON DELETE CASCADE │
+│ locale         VARCHAR(5) REFERENCES language(code)     │
+│ name           VARCHAR(100)                             │
+│                                                         │
+│ UNIQUE(tag_id, locale)                                  │
+└─────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────┐
+│ product_to_tag  (many-to-many)                          │
+├─────────────────────────────────────────────────────────┤
+│ product_id     INT REFERENCES product(id) ON DELETE CASCADE │
+│ tag_id         INT REFERENCES product_tag(id) ON DELETE CASCADE │
+│                                                         │
+│ PRIMARY KEY(product_id, tag_id)                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Product Variants (for physical products)
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ product_variant                                         │
+├─────────────────────────────────────────────────────────┤
+│ id              SERIAL PRIMARY KEY                      │
+│ product_id      INT REFERENCES product(id) ON DELETE CASCADE │
+│ sku             VARCHAR(50)                             │
+│ ean             VARCHAR(20)                             │
+│ name            VARCHAR(100)  -- e.g. '50-pack'         │
+│ price_override  DECIMAL(10,2) -- null = use product price│
+│ weight_grams    INT                                     │
+│ is_active       BOOLEAN DEFAULT true                    │
+│ sort_order      INT DEFAULT 0                           │
+│                                                         │
+│ UNIQUE(product_id, sku)                                 │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Templates & Bundles (LBL-specific, but available to any store via feature flags)
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ template  (a "style" that a product can have)           │
+├─────────────────────────────────────────────────────────┤
+│ id             SERIAL PRIMARY KEY                       │
+│ store_id       UUID REFERENCES store(id)                │
+│ slug           VARCHAR(100)                             │
+│ color_hex      VARCHAR(7)                               │
+│ preview_image  VARCHAR(500)                             │
+│ default_price  DECIMAL(10,2)                            │
+│ is_active      BOOLEAN DEFAULT true                     │
+│ sort_order     INT DEFAULT 0                            │
+│ created_at     TIMESTAMPTZ DEFAULT now()                │
+│ updated_at     TIMESTAMPTZ                              │
+└─────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────┐
+│ template_translation                                    │
+├─────────────────────────────────────────────────────────┤
+│ id             SERIAL PRIMARY KEY                       │
+│ template_id    INT REFERENCES template(id) ON DELETE CASCADE │
+│ locale         VARCHAR(5)                               │
+│ name           VARCHAR(100)                             │
+│ description    TEXT                                     │
+│                                                         │
+│ UNIQUE(template_id, locale)                             │
+└─────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────┐
+│ bundle                                                  │
+├─────────────────────────────────────────────────────────┤
+│ id              SERIAL PRIMARY KEY                      │
+│ store_id        UUID REFERENCES store(id)               │
+│ slug            VARCHAR(100)                            │
+│ price           DECIMAL(10,2)                           │
+│ compare_at_price DECIMAL(10,2)                          │
+│ image_url       VARCHAR(500)                            │
+│ is_active       BOOLEAN DEFAULT true                    │
+│ sort_order      INT DEFAULT 0                           │
+│ created_at      TIMESTAMPTZ DEFAULT now()               │
+│ updated_at      TIMESTAMPTZ                             │
+└─────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────┐
+│ bundle_translation                                      │
+├─────────────────────────────────────────────────────────┤
+│ id             SERIAL PRIMARY KEY                       │
+│ bundle_id      INT REFERENCES bundle(id) ON DELETE CASCADE │
+│ locale         VARCHAR(5)                               │
+│ name           VARCHAR(200)                             │
+│ description    TEXT                                     │
+│                                                         │
+│ UNIQUE(bundle_id, locale)                               │
+└─────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────┐
+│ bundle_item                                             │
+├─────────────────────────────────────────────────────────┤
+│ id             SERIAL PRIMARY KEY                       │
+│ bundle_id      INT REFERENCES bundle(id) ON DELETE CASCADE │
+│ product_id     INT REFERENCES product(id)               │
+│ quantity       INT DEFAULT 1                            │
+│ sort_order     INT DEFAULT 0                            │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Inventory (physical products only)
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ inventory                                               │
+├─────────────────────────────────────────────────────────┤
+│ id                SERIAL PRIMARY KEY                    │
+│ product_id        INT UNIQUE REFERENCES product(id)     │
+│ variant_id        INT REFERENCES product_variant(id)    │
+│ quantity_on_hand  INT DEFAULT 0                         │
+│ quantity_reserved INT DEFAULT 0  -- in pending orders   │
+│ lvb_quantity      INT DEFAULT 0  -- at Bol warehouse    │
+│ low_stock_threshold INT DEFAULT 5                       │
+│ updated_at        TIMESTAMPTZ                           │
+│                                                         │
+│ -- Available = on_hand - reserved                       │
+│ UNIQUE(product_id, variant_id)                          │
+└─────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────┐
+│ inventory_movement                                      │
+├─────────────────────────────────────────────────────────┤
+│ id              SERIAL PRIMARY KEY                      │
+│ product_id      INT REFERENCES product(id)              │
+│ variant_id      INT REFERENCES product_variant(id)      │
+│ quantity_change  INT           -- +5 restock, -1 sale   │
+│ type            VARCHAR(20)   -- 'sale', 'return',      │
+│                                  'adjustment',          │
+│                                  'lvb_shipment',        │
+│                                  'lvb_return'           │
+│ reference_type  VARCHAR(20)   -- 'order', 'return'      │
+│ reference_id    INT                                     │
+│ notes           TEXT                                    │
+│ created_by      INT REFERENCES admin_user(id)           │
+│ created_at      TIMESTAMPTZ DEFAULT now()               │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Sales Channels (Bol.com integration)
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ sales_channel                                           │
+├─────────────────────────────────────────────────────────┤
+│ id              SERIAL PRIMARY KEY                      │
+│ store_id        UUID REFERENCES store(id)               │
+│ type            VARCHAR(20)   -- 'bol', 'webshop'       │
+│ code            VARCHAR(50) UNIQUE -- 'matcare_bol_nl'  │
+│ name            VARCHAR(100)                            │
+│ country         VARCHAR(2)                              │
+│                                                         │
+│ -- Bol API credentials (encrypted)                      │
+│ api_client_id   VARCHAR(255)                            │
+│ api_client_secret VARCHAR(255)                          │
+│                                                         │
+│ -- Bol-specific                                         │
+│ is_lvb          BOOLEAN DEFAULT false                   │
+│                                                         │
+│ is_active       BOOLEAN DEFAULT true                    │
+│ created_at      TIMESTAMPTZ DEFAULT now()               │
+│ updated_at      TIMESTAMPTZ                             │
+└─────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────┐
+│ channel_listing  (product listed on a sales channel)    │
+├─────────────────────────────────────────────────────────┤
+│ id                SERIAL PRIMARY KEY                    │
+│ channel_id        INT REFERENCES sales_channel(id)      │
+│ product_id        INT REFERENCES product(id)            │
+│ variant_id        INT REFERENCES product_variant(id)    │
+│                                                         │
+│ external_offer_id VARCHAR(50)  -- Bol offer ID          │
+│ price             DECIMAL(10,2)                         │
+│ delivery_code     VARCHAR(20)                           │
+│ shipping_method   VARCHAR(20)  -- 'vvb','myparcel',     │
+│                                   'stamp'               │
+│ condition_name    VARCHAR(10) DEFAULT 'NEW'             │
+│                                                         │
+│ stock_synced_at   TIMESTAMPTZ                           │
+│ last_sync_error   TEXT                                  │
+│ is_active         BOOLEAN DEFAULT true                  │
+│ created_at        TIMESTAMPTZ DEFAULT now()             │
+│ updated_at        TIMESTAMPTZ                           │
+│                                                         │
+│ UNIQUE(channel_id, product_id, variant_id)              │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Orders (unified: webshop + Bol.com)
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ order                                                   │
+├─────────────────────────────────────────────────────────┤
+│ id                  SERIAL PRIMARY KEY                  │
+│ store_id            UUID REFERENCES store(id)           │
+│ channel_id          INT REFERENCES sales_channel(id)    │
+│ order_number        VARCHAR(50)  -- our internal number │
+│ external_order_id   VARCHAR(50)  -- Bol order ID        │
+│                                                         │
+│ -- Source                                               │
+│ source              VARCHAR(20) DEFAULT 'webshop'       │
+│                     -- 'webshop', 'bol'                 │
+│                                                         │
+│ -- Customer                                             │
+│ customer_id         INT REFERENCES customer(id)         │
+│ email               VARCHAR(255)                        │
+│ locale              VARCHAR(5)   -- customer's language  │
+│                                                         │
+│ -- Shipping address (snapshot)                          │
+│ shipping_name       VARCHAR(200)                        │
+│ shipping_street     VARCHAR(200)                        │
+│ shipping_house_nr   VARCHAR(20)                         │
+│ shipping_house_ext  VARCHAR(20)                         │
+│ shipping_postal_code VARCHAR(20)                        │
+│ shipping_city       VARCHAR(100)                        │
+│ shipping_country    VARCHAR(2)                          │
+│                                                         │
+│ -- Billing address (snapshot)                           │
+│ billing_name        VARCHAR(200)                        │
+│ billing_street      VARCHAR(200)                        │
+│ billing_house_nr    VARCHAR(20)                         │
+│ billing_house_ext   VARCHAR(20)                         │
+│ billing_postal_code VARCHAR(20)                         │
+│ billing_city        VARCHAR(100)                        │
+│ billing_country     VARCHAR(2)                          │
+│                                                         │
+│ -- Totals                                               │
+│ subtotal            DECIMAL(10,2)                       │
+│ shipping_cost       DECIMAL(10,2) DEFAULT 0             │
+│ tax_amount          DECIMAL(10,2) DEFAULT 0             │
+│ total               DECIMAL(10,2)                       │
+│ currency            VARCHAR(3) DEFAULT 'EUR'            │
+│                                                         │
+│ -- Payment                                              │
+│ payment_status      VARCHAR(20) DEFAULT 'pending'       │
+│                     -- 'pending','paid','refunded',     │
+│                        'partially_refunded','failed'    │
+│ payment_method      VARCHAR(30)  -- 'stripe', 'ideal',  │
+│                                    'bol'                │
+│ stripe_payment_id   VARCHAR(100)                        │
+│ paid_at             TIMESTAMPTZ                         │
+│                                                         │
+│ -- Status                                               │
+│ status              VARCHAR(20) DEFAULT 'pending'       │
+│                     -- 'pending','processing',          │
+│                        'shipped','delivered',           │
+│                        'cancelled','completed'          │
+│                                                         │
+│ -- Digital delivery                                     │
+│ download_token      VARCHAR(100) -- for digital products│
+│ download_expires_at TIMESTAMPTZ                         │
+│                                                         │
+│ -- Dates                                                │
+│ order_date          TIMESTAMPTZ DEFAULT now()           │
+│ created_at          TIMESTAMPTZ DEFAULT now()           │
+│ updated_at          TIMESTAMPTZ                         │
+│                                                         │
+│ UNIQUE(store_id, order_number)                          │
+└─────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────┐
+│ order_item                                              │
+├─────────────────────────────────────────────────────────┤
+│ id                      SERIAL PRIMARY KEY              │
+│ order_id                INT REFERENCES order(id)        │
+│ product_id              INT REFERENCES product(id)      │
+│ variant_id              INT REFERENCES product_variant(id)│
+│ shipment_id             INT REFERENCES shipment(id)     │
+│                                                         │
+│ -- Bol-specific                                         │
+│ external_order_item_id  VARCHAR(50)                     │
+│                                                         │
+│ -- Product snapshot (at time of order)                  │
+│ ean                     VARCHAR(20)                     │
+│ product_name            VARCHAR(255)                    │
+│ quantity                INT DEFAULT 1                   │
+│ unit_price              DECIMAL(10,2)                   │
+│ tax_rate                DECIMAL(5,2)                    │
+│ line_total              DECIMAL(10,2)                   │
+│                                                         │
+│ -- Bol fees                                             │
+│ commission_total        DECIMAL(10,2)                   │
+│                                                         │
+│ -- Status (order-item level for Bol compat)             │
+│ status                  VARCHAR(20) DEFAULT 'pending'   │
+│                         -- 'pending','processing',      │
+│                            'shipped','delivered',       │
+│                            'cancelled','returned'       │
+│                                                         │
+│ -- Digital delivery                                     │
+│ file_url                VARCHAR(500) -- snapshot of file │
+│ downloaded_at           TIMESTAMPTZ                     │
+│                                                         │
+│ -- Cancellation                                         │
+│ cancelled_quantity      INT DEFAULT 0                   │
+│ cancel_reason           VARCHAR(255)                    │
+│ cancelled_at            TIMESTAMPTZ                     │
+│                                                         │
+│ created_at              TIMESTAMPTZ DEFAULT now()       │
+│ updated_at              TIMESTAMPTZ                     │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Shipping
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ shipment                                                │
+├─────────────────────────────────────────────────────────┤
+│ id                    SERIAL PRIMARY KEY                │
+│ order_id              INT REFERENCES order(id)          │
+│                                                         │
+│ -- Carrier                                              │
+│ carrier               VARCHAR(20)  -- 'postnl','dhl',   │
+│                                       'bol_vvb'         │
+│ carrier_service       VARCHAR(30)  -- 'mailbox','parcel' │
+│                                       'stamp'           │
+│                                                         │
+│ -- Label                                                │
+│ myparcel_shipment_id  VARCHAR(50)                       │
+│ label_url             VARCHAR(500)                      │
+│ label_downloaded_at   TIMESTAMPTZ                       │
+│                                                         │
+│ -- Tracking                                             │
+│ tracking_code         VARCHAR(100)                      │
+│ tracking_url          VARCHAR(255)                      │
+│                                                         │
+│ -- Physical                                             │
+│ weight_grams          INT                               │
+│ shipping_cost         DECIMAL(10,2)                     │
+│                                                         │
+│ -- Timing                                               │
+│ promised_delivery_date DATE                             │
+│ expected_ship_by      TIMESTAMPTZ                       │
+│ handed_in_at          TIMESTAMPTZ                       │
+│ shipped_at            TIMESTAMPTZ                       │
+│ delivered_at          TIMESTAMPTZ                       │
+│                                                         │
+│ -- Status                                               │
+│ status                VARCHAR(30) DEFAULT 'pending'     │
+│                       -- 'pending','label_requested',   │
+│                          'label_ready','shipped',       │
+│                          'in_transit','delivered',      │
+│                          'delivery_failed',             │
+│                          'returned_to_sender'           │
+│                                                         │
+│ created_at            TIMESTAMPTZ DEFAULT now()         │
+│ updated_at            TIMESTAMPTZ                       │
+└─────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────┐
+│ return                                                  │
+├─────────────────────────────────────────────────────────┤
+│ id                  SERIAL PRIMARY KEY                  │
+│ order_id            INT REFERENCES order(id)            │
+│ order_item_id       INT REFERENCES order_item(id)       │
+│                                                         │
+│ external_return_id  VARCHAR(50)  -- Bol return ID       │
+│ reason              VARCHAR(255)                        │
+│ quantity            INT DEFAULT 1                       │
+│ status              VARCHAR(20) DEFAULT 'pending'       │
+│                     -- 'pending','received',            │
+│                        'approved','rejected','refunded' │
+│ refund_amount       DECIMAL(10,2)                       │
+│ notes               TEXT                                │
+│                                                         │
+│ received_at         TIMESTAMPTZ                         │
+│ resolved_at         TIMESTAMPTZ                         │
+│ created_at          TIMESTAMPTZ DEFAULT now()           │
+│ updated_at          TIMESTAMPTZ                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Customers
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ customer                                                │
+├─────────────────────────────────────────────────────────┤
+│ id              SERIAL PRIMARY KEY                      │
+│ store_id        UUID REFERENCES store(id)               │
+│ email           VARCHAR(255)                            │
+│ password_hash   VARCHAR(255)  -- null for Bol customers │
+│ first_name      VARCHAR(100)                            │
+│ last_name       VARCHAR(100)                            │
+│ phone           VARCHAR(20)                             │
+│ locale          VARCHAR(5) DEFAULT 'nl'                 │
+│                                                         │
+│ -- Default address                                      │
+│ street          VARCHAR(200)                            │
+│ house_nr        VARCHAR(20)                             │
+│ house_ext       VARCHAR(20)                             │
+│ postal_code     VARCHAR(20)                             │
+│ city            VARCHAR(100)                            │
+│ country         VARCHAR(2)                              │
+│                                                         │
+│ -- Source                                               │
+│ source          VARCHAR(20) DEFAULT 'webshop'           │
+│                 -- 'webshop', 'bol'                     │
+│                                                         │
+│ is_active       BOOLEAN DEFAULT true                    │
+│ created_at      TIMESTAMPTZ DEFAULT now()               │
+│ updated_at      TIMESTAMPTZ                             │
+│                                                         │
+│ UNIQUE(store_id, email)                                 │
+│ -- A customer with same email on different stores       │
+│ -- = different customer records (store isolation)       │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## CMS / Content
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ content_page                                            │
+├─────────────────────────────────────────────────────────┤
+│ id              SERIAL PRIMARY KEY                      │
+│ store_id        UUID REFERENCES store(id)               │
+│ slug            VARCHAR(100) -- for internal reference   │
+│ page_type       VARCHAR(20) DEFAULT 'page'              │
+│                 -- 'page', 'landing', 'policy'          │
+│ banner_image    VARCHAR(500)                            │
+│ settings        JSONB                                   │
+│ is_published    BOOLEAN DEFAULT false                   │
+│ sort_order      INT DEFAULT 0                           │
+│ created_at      TIMESTAMPTZ DEFAULT now()               │
+│ updated_at      TIMESTAMPTZ                             │
+│                                                         │
+│ UNIQUE(store_id, slug)                                  │
+└─────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────┐
+│ content_page_translation                                │
+├─────────────────────────────────────────────────────────┤
+│ id                  SERIAL PRIMARY KEY                  │
+│ page_id             INT REFERENCES content_page(id) ON DELETE CASCADE │
+│ locale              VARCHAR(5) REFERENCES language(code)│
+│ title               VARCHAR(200)                        │
+│ content             TEXT          -- rich text / HTML    │
+│ meta_title          VARCHAR(200)                        │
+│ meta_description    VARCHAR(300)                        │
+│                                                         │
+│ UNIQUE(page_id, locale)                                 │
+└─────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────┐
+│ blog_post                                               │
+├─────────────────────────────────────────────────────────┤
+│ id              SERIAL PRIMARY KEY                      │
+│ store_id        UUID REFERENCES store(id)               │
+│ slug            VARCHAR(100)                            │
+│ featured_image  VARCHAR(500)                            │
+│ is_published    BOOLEAN DEFAULT false                   │
+│ published_at    TIMESTAMPTZ                             │
+│ created_at      TIMESTAMPTZ DEFAULT now()               │
+│ updated_at      TIMESTAMPTZ                             │
+│                                                         │
+│ UNIQUE(store_id, slug)                                  │
+└─────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────┐
+│ blog_post_translation                                   │
+├─────────────────────────────────────────────────────────┤
+│ id                  SERIAL PRIMARY KEY                  │
+│ post_id             INT REFERENCES blog_post(id) ON DELETE CASCADE │
+│ locale              VARCHAR(5) REFERENCES language(code)│
+│ title               VARCHAR(200)                        │
+│ excerpt             TEXT                                 │
+│ content             TEXT                                 │
+│ meta_title          VARCHAR(200)                        │
+│ meta_description    VARCHAR(300)                        │
+│                                                         │
+│ UNIQUE(post_id, locale)                                 │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Reviews
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ review                                                  │
+├─────────────────────────────────────────────────────────┤
+│ id              SERIAL PRIMARY KEY                      │
+│ store_id        UUID REFERENCES store(id)               │
+│ product_id      INT REFERENCES product(id)              │
+│ customer_name   VARCHAR(100)                            │
+│ rating          INT           -- 1-5                    │
+│ is_verified     BOOLEAN DEFAULT false                   │
+│ is_published    BOOLEAN DEFAULT false                   │
+│ source          VARCHAR(20) DEFAULT 'webshop'           │
+│                 -- 'webshop', 'bol', 'manual'           │
+│ created_at      TIMESTAMPTZ DEFAULT now()               │
+└─────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────┐
+│ review_translation                                      │
+├─────────────────────────────────────────────────────────┤
+│ id              SERIAL PRIMARY KEY                      │
+│ review_id       INT REFERENCES review(id) ON DELETE CASCADE │
+│ locale          VARCHAR(5) REFERENCES language(code)    │
+│ title           VARCHAR(200)                            │
+│ content         TEXT                                    │
+│                                                         │
+│ UNIQUE(review_id, locale)                               │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Admin Users
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ admin_user                                              │
+├─────────────────────────────────────────────────────────┤
+│ id              SERIAL PRIMARY KEY                      │
+│ email           VARCHAR(255) UNIQUE                     │
+│ password_hash   VARCHAR(255)                            │
+│ name            VARCHAR(100)                            │
+│ role            VARCHAR(20) DEFAULT 'admin'             │
+│                 -- 'super_admin', 'admin'               │
+│ store_access    JSONB DEFAULT '[]'                      │
+│                 -- ['lbl','matcare'] or ['*'] for all   │
+│ is_active       BOOLEAN DEFAULT true                    │
+│ created_at      TIMESTAMPTZ DEFAULT now()               │
+│ updated_at      TIMESTAMPTZ                             │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Bol.com Sync Tracking
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ bol_sync_log                                            │
+├─────────────────────────────────────────────────────────┤
+│ id              SERIAL PRIMARY KEY                      │
+│ channel_id      INT REFERENCES sales_channel(id)        │
+│ sync_type       VARCHAR(30)  -- 'orders', 'stock',      │
+│                                 'offers'                │
+│ status          VARCHAR(20)  -- 'running', 'completed', │
+│                                 'failed'                │
+│ records_synced  INT DEFAULT 0                           │
+│ error_message   TEXT                                    │
+│ started_at      TIMESTAMPTZ DEFAULT now()               │
+│ completed_at    TIMESTAMPTZ                             │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Key Relationships Summary
+
+```
+store  ─┬─ category ── category_translation
+        ├─ product ─┬─ product_translation
+        │           ├─ product_variant
+        │           ├─ inventory
+        │           ├─ channel_listing ── sales_channel
+        │           └─ review ── review_translation
+        ├─ template ── template_translation
+        ├─ bundle ─── bundle_item ── product
+        ├─ content_page ── content_page_translation
+        ├─ blog_post ── blog_post_translation
+        ├─ customer
+        ├─ order ─┬─ order_item
+        │         ├─ shipment
+        │         └─ return
+        ├─ sales_channel ── channel_listing
+        ├─ slug_route
+        └─ product_tag ── product_tag_translation
+
+admin_user ── store_access (JSONB, cross-store)
+```
+
+---
+
+## Next Steps
+
+1. Convert this to Prisma schema
+2. Refactor LBL codebase to be store-aware
+3. Build store context middleware (domain → store config)
+4. Add shipping/inventory/order modules
+5. Build Bol.com sync worker
+6. Create CLAUDE.md project prompt for VS Code

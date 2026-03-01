@@ -1,0 +1,9 @@
+// Widget system for CMS content
+export { WidgetRenderer } from './WidgetRenderer';
+export { FeaturedProductsWidget } from './FeaturedProductsWidget';
+export { LatestProductsWidget } from './LatestProductsWidget';
+export { ProductsByCategoryWidget } from './ProductsByCategoryWidget';
+export { CategoriesWidget } from './CategoriesWidget';
+export { CTAWidget } from './CTAWidget';
+export { NewsletterWidget } from './NewsletterWidget';
+export { ReviewsWidget } from './ReviewsWidget';
