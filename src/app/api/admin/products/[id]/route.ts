@@ -316,6 +316,27 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         }
       }
 
+      // Sync webshop listing with product changes
+      const listingUpdate: Record<string, unknown> = {};
+      if (priceInCents !== undefined) listingUpdate.priceInCents = priceInCents;
+      if (compareAtPriceInCents !== undefined) listingUpdate.compareAtPriceInCents = compareAtPriceInCents || null;
+      if (currency !== undefined) listingUpdate.currency = currency;
+      if (isPublished !== undefined) { listingUpdate.isPublished = isPublished; listingUpdate.publishedAt = publishedAt; }
+      if (isFeatured !== undefined) listingUpdate.isFeatured = isFeatured;
+      if (etsyListingId !== undefined) listingUpdate.externalId = etsyListingId || null;
+
+      if (Object.keys(listingUpdate).length > 0) {
+        const webshopChannel = await tx.salesChannel.findFirst({
+          where: { siteId, type: 'webshop' },
+        });
+        if (webshopChannel) {
+          await tx.productListing.updateMany({
+            where: { productId, channelId: webshopChannel.id, variantId: null },
+            data: listingUpdate,
+          });
+        }
+      }
+
       // Fetch and return the updated product
       return tx.product.findUnique({
         where: { id: productId },

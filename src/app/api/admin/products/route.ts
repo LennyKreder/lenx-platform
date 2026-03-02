@@ -374,6 +374,26 @@ export async function POST(request: NextRequest) {
         });
       }
 
+      // Auto-create webshop listing
+      const webshopChannel = await tx.salesChannel.findFirst({
+        where: { siteId, type: 'webshop' },
+      });
+      if (webshopChannel) {
+        await tx.productListing.create({
+          data: {
+            productId: newProduct.id,
+            channelId: webshopChannel.id,
+            priceInCents: newProduct.priceInCents,
+            compareAtPriceInCents: newProduct.compareAtPriceInCents,
+            currency: newProduct.currency,
+            isPublished: newProduct.isPublished,
+            isFeatured: newProduct.isFeatured,
+            publishedAt: newProduct.publishedAt,
+            externalId: newProduct.etsyListingId,
+          },
+        });
+      }
+
       return tx.product.findUnique({
         where: { id: newProduct.id },
         include: {

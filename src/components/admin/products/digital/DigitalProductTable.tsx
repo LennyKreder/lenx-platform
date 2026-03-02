@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { DataTable, type Column } from '@/components/admin/shared/DataTable';
 import { StatusBadge } from '@/components/admin/shared/StatusBadge';
 import { InlineConfirm } from '@/components/admin/shared/ConfirmDialog';
-import { Pencil, Trash2, FileText, Copy, CopyPlus, Link2, Check, Image as ImageIcon, Video, Star } from 'lucide-react';
+import { Pencil, Trash2, FileText, Copy, CopyPlus, Link2, Image as ImageIcon, Video, Star } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { themes } from '@/config/themes';
 
@@ -27,7 +27,7 @@ interface TemplateTranslation {
   name: string;
 }
 
-interface Product {
+export interface DigitalProduct {
   id: number;
   year: number | null;
   theme: string | null;
@@ -48,11 +48,10 @@ interface Product {
   _count: { files: number; tags: number };
   imageCount: number;
   hasVideo: boolean;
-  site?: { code: string; name: string } | null;
 }
 
-interface ProductTableProps {
-  products: Product[];
+interface DigitalProductTableProps {
+  products: DigitalProduct[];
   pagination: {
     page: number;
     pageSize: number;
@@ -62,10 +61,8 @@ interface ProductTableProps {
   onPageChange: (page: number) => void;
   selectedIds: Set<number>;
   onSelectionChange: (ids: Set<number>) => void;
-  showSiteColumn?: boolean;
 }
 
-// Helper to get translation for a specific language
 function getTranslation<T extends { languageCode: string; name: string | null }>(
   translations: T[],
   langCode: string
@@ -74,46 +71,30 @@ function getTranslation<T extends { languageCode: string; name: string | null }>
   return t?.name || translations[0]?.name || '';
 }
 
-// Helper to get slug for a specific language
-function getSlug(slugs: SlugRoute[], langCode: string): string {
-  const s = slugs.find((sl) => sl.languageCode === langCode);
-  return s?.slug || slugs[0]?.slug || '';
-}
-
-const siteColors: Record<string, string> = {
-  matcare: 'bg-emerald-100 text-emerald-800',
-  clariz: 'bg-purple-100 text-purple-800',
-  jellybean: 'bg-amber-100 text-amber-800',
-};
-
-export function ProductTable({
+export function DigitalProductTable({
   products,
   pagination,
   onPageChange,
   selectedIds,
   onSelectionChange,
-  showSiteColumn,
-}: ProductTableProps) {
+}: DigitalProductTableProps) {
   const router = useRouter();
   const [localProducts, setLocalProducts] = useState(products);
   const [duplicating, setDuplicating] = useState<number | null>(null);
   const [togglingFeatured, setTogglingFeatured] = useState<number | null>(null);
 
-  // Update local products when props change
   useEffect(() => {
     setLocalProducts(products);
   }, [products]);
 
   const handleSelectAll = (checked: boolean) => {
+    const newSelection = new Set(selectedIds);
     if (checked) {
-      const newSelection = new Set(selectedIds);
       localProducts.forEach((p) => newSelection.add(p.id));
-      onSelectionChange(newSelection);
     } else {
-      const newSelection = new Set(selectedIds);
       localProducts.forEach((p) => newSelection.delete(p.id));
-      onSelectionChange(newSelection);
     }
+    onSelectionChange(newSelection);
   };
 
   const handleSelectOne = (id: number, checked: boolean) => {
@@ -194,7 +175,7 @@ export function ProductTable({
     navigator.clipboard.writeText(url);
   };
 
-  const columns: Column<Product>[] = [
+  const columns: Column<DigitalProduct>[] = [
     {
       key: 'select',
       header: (
@@ -245,7 +226,6 @@ export function ProductTable({
         const themeData = product.theme
           ? themes[product.theme as keyof typeof themes]
           : null;
-        // Use template name if available, otherwise product's own translation
         const templateName = product.template
           ? getTranslation(product.template.translations, 'en')
           : getTranslation(product.translations as { languageCode: string; name: string | null }[], 'en') || 'Standalone Product';
@@ -279,23 +259,6 @@ export function ProductTable({
         );
       },
     },
-    ...(showSiteColumn
-      ? [
-          {
-            key: 'site' as const,
-            header: 'Site',
-            cell: (product: Product) => {
-              const code = product.site?.code || '';
-              const colorClass = siteColors[code] || 'bg-gray-100 text-gray-800';
-              return (
-                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${colorClass}`}>
-                  {product.site?.name || code || '—'}
-                </span>
-              );
-            },
-          },
-        ]
-      : []),
     {
       key: 'productType',
       header: 'Type',

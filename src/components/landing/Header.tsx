@@ -102,10 +102,7 @@ export function Header() {
           {site.logoUrl ? (
             <img src={site.logoUrl} alt={site.name} className="h-8" />
           ) : (
-            <span className="text-lg font-[family-name:var(--font-lexend-deca)]">
-              <span className="font-light">Layouts</span>
-              <span className="font-medium"> by Lenny</span>
-            </span>
+            <span className="text-lg font-semibold">{site.name}</span>
           )}
         </Link>
 

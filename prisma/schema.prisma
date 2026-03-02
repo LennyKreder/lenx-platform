@@ -356,7 +356,7 @@ model Product {
   reviews      Review[]
   variants     ProductVariant[]
   inventory    Inventory?
-  channelListings ChannelListing[]
+  listings           ProductListing[]
   inventoryMovements InventoryMovement[]
 
   @@index([siteId])
@@ -746,16 +746,19 @@ model OrderItem {
   orderId      Int
   productId    Int?
   bundleId     Int?
+  listingId    Int?    @map("listing_id")
   quantity     Int @default(1)
   priceInCents Int
 
-  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product? @relation(fields: [productId], references: [id])
-  bundle  Bundle?  @relation(fields: [bundleId], references: [id])
+  order   Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product?        @relation(fields: [productId], references: [id])
+  bundle  Bundle?         @relation(fields: [bundleId], references: [id])
+  listing ProductListing? @relation(fields: [listingId], references: [id])
 
   @@index([orderId])
   @@index([productId])
   @@index([bundleId])
+  @@index([listingId])
   @@map("orderitem")
 }
 
@@ -1060,7 +1063,7 @@ model ProductVariant {
 
   product          Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
   inventory        Inventory?
-  channelListings  ChannelListing[]
+  listings         ProductListing[]
   inventoryMovements InventoryMovement[]
 
   @@unique([productId, sku])
@@ -1126,14 +1129,14 @@ model InventoryMovement {
 }
 
 // ============================================
-// SALES CHANNELS (Bol.com integration)
+// SALES CHANNELS
 // ============================================
 
 model SalesChannel {
   id              Int      @id @default(autoincrement())
   siteId         String
-  type            String   @db.VarChar(20) // 'bol', 'webshop'
-  code            String   @unique @db.VarChar(50) // 'matcare_bol_nl'
+  type            String   @db.VarChar(20) // 'webshop', 'bol'
+  code            String   @db.VarChar(50) // 'matcare_webshop', 'matcare_bol_nl'
   name            String   @db.VarChar(100)
   country         String?  @db.VarChar(2)
 
@@ -1146,35 +1149,60 @@ model SalesChannel {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  site     Site            @relation(fields: [siteId], references: [id])
-  listings ChannelListing[]
+  site     Site              @relation(fields: [siteId], references: [id])
+  listings ProductListing[]
   syncLogs BolSyncLog[]
 
+  @@unique([siteId, type, country])
+  @@index([siteId])
   @@map("sales_channel")
 }
 
-model ChannelListing {
+// ProductListing represents a product listed on a specific sales channel
+// Each product can have multiple listings (webshop, Bol NL, Bol BE, etc.)
+model ProductListing {
   id              Int      @id @default(autoincrement())
-  channelId       Int
   productId       Int
+  channelId       Int
   variantId       Int?
 
-  externalOfferId String?  @db.VarChar(50)
-  priceInCents    Int
+  // Pricing
+  priceInCents          Int    @default(0)
+  compareAtPriceInCents Int?   @map("compare_at_price_in_cents")
+  currency              String @default("EUR") @db.VarChar(3)
+
+  // Availability
+  isPublished     Boolean  @default(false)
+  isFeatured      Boolean  @default(false)
+  publishedAt     DateTime?
+
+  // External IDs (Bol offer ID, Etsy listing ID, etc.)
+  externalId      String?  @db.VarChar(100)
+
+  // Bol-specific
   deliveryCode    String?  @db.VarChar(20)
 
-  stockSyncedAt   DateTime?
-  lastSyncError   String?   @db.Text
-  isActive        Boolean   @default(true)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  // Sync tracking
+  lastSyncedAt    DateTime?
+  lastSyncError   String?  @db.Text
 
-  channel  SalesChannel   @relation(fields: [channelId], references: [id])
-  product  Product        @relation(fields: [productId], references: [id])
-  variant  ProductVariant? @relation(fields: [variantId], references: [id])
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  @@unique([channelId, productId, variantId])
-  @@map("channel_listing")
+  product    Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  channel    SalesChannel   @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  variant    ProductVariant? @relation(fields: [variantId], references: [id])
+  orderItems OrderItem[]
+
+  @@unique([productId, channelId, variantId])
+  @@index([productId])
+  @@index([channelId])
+  @@index([variantId])
+  @@index([isPublished])
+  @@index([isFeatured])
+  @@index([externalId])
+  @@map("product_listing")
 }
 
 model BolSyncLog {

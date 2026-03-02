@@ -61,10 +61,7 @@ export function Footer() {
     <footer className="border-t py-8 md:py-12">
       <div className="container flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex flex-col items-center md:items-start gap-2">
-          <span className="font-semibold">{site.footerText || t('footer.copyright')}</span>
-          <p className="text-sm text-muted-foreground">
-            {t('footer.tagline')}
-          </p>
+          <span className="font-semibold">{site.footerText || site.name}</span>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground">
           {links.map((link) =>

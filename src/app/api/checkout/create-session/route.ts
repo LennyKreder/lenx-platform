@@ -95,6 +95,24 @@ export async function POST(request: Request) {
 
     // Create pending order with customer-facing order number
     const site = await getSiteFromHeaders();
+
+    // Look up webshop listings for products to store listingId on order items
+    const productIds = items.filter((i) => i.productId && !i.bundleId).map((i) => i.productId);
+    const listingMap = new Map<number, number>();
+    if (productIds.length > 0) {
+      const listings = await prisma.productListing.findMany({
+        where: {
+          productId: { in: productIds },
+          channel: { type: 'webshop', siteId: site.id },
+          variantId: null,
+        },
+        select: { id: true, productId: true },
+      });
+      for (const l of listings) {
+        listingMap.set(l.productId, l.id);
+      }
+    }
+
     const order = await createOrderWithNumber({
       siteId: site.id,
       customerId,
@@ -110,6 +128,7 @@ export async function POST(request: Request) {
       items: items.map((item) => ({
         productId: item.productId,
         bundleId: item.bundleId,
+        listingId: item.productId ? listingMap.get(item.productId) ?? null : null,
         quantity: item.quantity,
         priceInCents: item.priceInCents,
       })),

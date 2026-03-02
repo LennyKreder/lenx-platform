@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { ProductTable } from '@/components/admin/products/ProductTable';
+import { DigitalProductTable, type DigitalProduct } from './DigitalProductTable';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -16,45 +16,6 @@ import { devices } from '@/config/devices';
 import { themes } from '@/config/themes';
 import { productTypes } from '@/config/product-types';
 
-interface SlugRoute {
-  languageCode: string;
-  slug: string;
-}
-
-interface ProductTranslation {
-  languageCode: string;
-  name: string | null;
-  description: string | null;
-}
-
-interface TemplateTranslation {
-  languageCode: string;
-  name: string;
-}
-
-interface Product {
-  id: number;
-  year: number | null;
-  theme: string | null;
-  contentLanguage: string | null;
-  productType: string | null;
-  device: string | null;
-  priceInCents: number;
-  currency: string;
-  downloadCode: string;
-  isPublished: boolean;
-  isFeatured: boolean;
-  translations: ProductTranslation[];
-  slugs: SlugRoute[];
-  template: {
-    translations: TemplateTranslation[];
-    slugs: SlugRoute[];
-  } | null;
-  _count: { files: number; tags: number };
-  imageCount: number;
-  hasVideo: boolean;
-}
-
 interface TemplateOption {
   id: number;
   name: string;
@@ -68,14 +29,12 @@ interface Pagination {
   totalPages: number;
 }
 
-interface ProductsPageClientProps {
-  initialProducts: Product[];
+interface DigitalProductsPageClientProps {
+  initialProducts: DigitalProduct[];
   initialPagination: Pagination;
-  showSiteColumn?: boolean;
-  showDigitalFilters?: boolean;
 }
 
-const FILTERS_STORAGE_KEY = 'admin-products-filters';
+const FILTERS_STORAGE_KEY = 'admin-digital-products-filters';
 
 interface SavedFilters {
   search: string;
@@ -113,15 +72,13 @@ function clearSavedFilters() {
   }
 }
 
-export function ProductsPageClient({
+export function DigitalProductsPageClient({
   initialProducts,
   initialPagination,
-  showSiteColumn,
-  showDigitalFilters = true,
-}: ProductsPageClientProps) {
+}: DigitalProductsPageClientProps) {
   const saved = useRef(loadSavedFilters());
 
-  const [products, setProducts] = useState<Product[]>(initialProducts);
+  const [products, setProducts] = useState<DigitalProduct[]>(initialProducts);
   const [pagination, setPagination] = useState<Pagination>(initialPagination);
   const [templates, setTemplates] = useState<TemplateOption[]>([]);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
@@ -138,7 +95,6 @@ export function ProductsPageClient({
   const [selectedProductType, setSelectedProductType] = useState(saved.current?.productType || 'all');
   const [page, setPage] = useState(initialPagination.page);
 
-  // Selection state
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [bulkActionLoading, setBulkActionLoading] = useState<string | null>(null);
 
@@ -146,7 +102,6 @@ export function ProductsPageClient({
   const isInitialMount = useRef(true);
   const hasRestoredFilters = useRef(!!saved.current);
 
-  // Save filters to sessionStorage whenever they change
   useEffect(() => {
     saveFilters({
       search: searchQuery,
@@ -160,7 +115,6 @@ export function ProductsPageClient({
     });
   }, [searchQuery, selectedTemplate, selectedStatus, selectedDevice, selectedTheme, selectedLanguage, selectedYear, selectedProductType]);
 
-  // Debounce search
   useEffect(() => {
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
@@ -204,27 +158,22 @@ export function ProductsPageClient({
         }
       } else {
         console.error('API error:', data.error || 'Unknown error');
-        // Still update with empty results on error
         setProducts([]);
       }
     } catch (error) {
       console.error('Failed to fetch products:', error);
-      // Clear products on network error
       setProducts([]);
     } finally {
       setIsLoading(false);
     }
   }, [debouncedSearch, selectedTemplate, selectedStatus, selectedDevice, selectedTheme, selectedLanguage, selectedYear, selectedProductType, page]);
 
-  // Fetch when filters change (skip initial mount unless we have restored filters)
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false;
       if (hasRestoredFilters.current) {
-        // Restored filters from session - fetch with those filters
         fetchProducts();
       } else {
-        // No saved filters - just fetch filter options
         fetch('/api/admin/products?page=1&pageSize=1')
           .then((res) => res.json())
           .then((data) => {
@@ -244,41 +193,6 @@ export function ProductsPageClient({
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
-  };
-
-  const handleTemplateChange = (value: string) => {
-    setSelectedTemplate(value);
-    setPage(1);
-  };
-
-  const handleStatusChange = (value: string) => {
-    setSelectedStatus(value);
-    setPage(1);
-  };
-
-  const handleDeviceChange = (value: string) => {
-    setSelectedDevice(value);
-    setPage(1);
-  };
-
-  const handleThemeChange = (value: string) => {
-    setSelectedTheme(value);
-    setPage(1);
-  };
-
-  const handleLanguageChange = (value: string) => {
-    setSelectedLanguage(value);
-    setPage(1);
-  };
-
-  const handleYearChange = (value: string) => {
-    setSelectedYear(value);
-    setPage(1);
-  };
-
-  const handleProductTypeChange = (value: string) => {
-    setSelectedProductType(value);
-    setPage(1);
   };
 
   const hasActiveFilters = searchQuery !== '' ||
@@ -347,10 +261,6 @@ export function ProductsPageClient({
     }
   };
 
-  const clearSelection = () => {
-    setSelectedIds(new Set());
-  };
-
   return (
     <div className="space-y-4">
       {/* Search and Filters */}
@@ -365,98 +275,94 @@ export function ProductsPageClient({
           />
         </div>
 
-        {showDigitalFilters && (
-          <>
-            <Select value={selectedTemplate} onValueChange={handleTemplateChange}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Template" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Templates</SelectItem>
-                {templates.map((t) => (
-                  <SelectItem key={t.id} value={t.id.toString()}>
-                    {t.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <Select value={selectedTemplate} onValueChange={(v) => { setSelectedTemplate(v); setPage(1); }}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Template" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Templates</SelectItem>
+            {templates.map((t) => (
+              <SelectItem key={t.id} value={t.id.toString()}>
+                {t.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-            <Select value={selectedDevice} onValueChange={handleDeviceChange}>
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="Device" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Devices</SelectItem>
-                {Object.entries(devices).map(([id, d]) => (
-                  <SelectItem key={id} value={id}>
-                    {d.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <Select value={selectedDevice} onValueChange={(v) => { setSelectedDevice(v); setPage(1); }}>
+          <SelectTrigger className="w-[150px]">
+            <SelectValue placeholder="Device" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Devices</SelectItem>
+            {Object.entries(devices).map(([id, d]) => (
+              <SelectItem key={id} value={id}>
+                {d.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-            <Select value={selectedTheme} onValueChange={handleThemeChange}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Theme" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Themes</SelectItem>
-                {Object.entries(themes).map(([id, t]) => (
-                  <SelectItem key={id} value={id}>
-                    <span className="flex items-center gap-2">
-                      <span
-                        className="w-3 h-3 rounded-full shrink-0"
-                        style={{ backgroundColor: t.previewColor }}
-                      />
-                      {t.name}
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <Select value={selectedTheme} onValueChange={(v) => { setSelectedTheme(v); setPage(1); }}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Theme" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Themes</SelectItem>
+            {Object.entries(themes).map(([id, t]) => (
+              <SelectItem key={id} value={id}>
+                <span className="flex items-center gap-2">
+                  <span
+                    className="w-3 h-3 rounded-full shrink-0"
+                    style={{ backgroundColor: t.previewColor }}
+                  />
+                  {t.name}
+                </span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-            <Select value={selectedLanguage} onValueChange={handleLanguageChange}>
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="Language" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Languages</SelectItem>
-                <SelectItem value="en">English</SelectItem>
-                <SelectItem value="nl">Nederlands</SelectItem>
-              </SelectContent>
-            </Select>
+        <Select value={selectedLanguage} onValueChange={(v) => { setSelectedLanguage(v); setPage(1); }}>
+          <SelectTrigger className="w-[150px]">
+            <SelectValue placeholder="Language" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Languages</SelectItem>
+            <SelectItem value="en">English</SelectItem>
+            <SelectItem value="nl">Nederlands</SelectItem>
+          </SelectContent>
+        </Select>
 
-            <Select value={selectedYear} onValueChange={handleYearChange}>
-              <SelectTrigger className="w-[120px]">
-                <SelectValue placeholder="Year" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Years</SelectItem>
-                {availableYears.map((year) => (
-                  <SelectItem key={year} value={year.toString()}>
-                    {year}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <Select value={selectedYear} onValueChange={(v) => { setSelectedYear(v); setPage(1); }}>
+          <SelectTrigger className="w-[120px]">
+            <SelectValue placeholder="Year" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Years</SelectItem>
+            {availableYears.map((year) => (
+              <SelectItem key={year} value={year.toString()}>
+                {year}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-            <Select value={selectedProductType} onValueChange={handleProductTypeChange}>
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                {Object.entries(productTypes).map(([id, type]) => (
-                  <SelectItem key={id} value={id}>
-                    {type.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </>
-        )}
+        <Select value={selectedProductType} onValueChange={(v) => { setSelectedProductType(v); setPage(1); }}>
+          <SelectTrigger className="w-[150px]">
+            <SelectValue placeholder="Type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Types</SelectItem>
+            {Object.entries(productTypes).map(([id, type]) => (
+              <SelectItem key={id} value={id}>
+                {type.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-        <Select value={selectedStatus} onValueChange={handleStatusChange}>
+        <Select value={selectedStatus} onValueChange={(v) => { setSelectedStatus(v); setPage(1); }}>
           <SelectTrigger className="w-[140px]">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
@@ -566,7 +472,7 @@ export function ProductsPageClient({
             <Button
               variant="ghost"
               size="sm"
-              onClick={clearSelection}
+              onClick={() => setSelectedIds(new Set())}
             >
               <X className="h-4 w-4" />
               Clear
@@ -576,13 +482,12 @@ export function ProductsPageClient({
       )}
 
       {/* Product Table */}
-      <ProductTable
+      <DigitalProductTable
         products={products}
         pagination={pagination}
         onPageChange={handlePageChange}
         selectedIds={selectedIds}
         onSelectionChange={setSelectedIds}
-        showSiteColumn={showSiteColumn}
       />
     </div>
   );

@@ -32,6 +32,7 @@ interface CreateOrderData {
   items: {
     productId?: number | null;
     bundleId?: number | null;
+    listingId?: number | null;
     quantity?: number;
     priceInCents: number;
   }[];
@@ -76,6 +77,7 @@ export async function createOrderWithNumber(data: CreateOrderData) {
               create: data.items.map((item) => ({
                 productId: item.productId || null,
                 bundleId: item.bundleId || null,
+                listingId: item.listingId || null,
                 quantity: item.quantity || 1,
                 priceInCents: item.priceInCents,
               })),

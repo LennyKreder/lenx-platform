@@ -54,10 +54,15 @@ export async function GET(request: NextRequest) {
   const pageSizeParam = searchParams.get('pageSize');
   const pageSize = pageSizeParam ? parseInt(pageSizeParam, 10) : settings.itemsPerPage;
 
-  // Build where clause
+  // Build where clause — filter via webshop listing's published status
   const where: Prisma.ProductWhereInput = {
     siteId: site.id,
-    isPublished: true,
+    listings: {
+      some: {
+        isPublished: true,
+        channel: { type: 'webshop', siteId: site.id },
+      },
+    },
   };
 
   if (year) {
@@ -95,7 +100,13 @@ export async function GET(request: NextRequest) {
     const priceFilter: { gte?: number; lte?: number } = {};
     if (minPrice) priceFilter.gte = parseInt(minPrice, 10);
     if (maxPrice) priceFilter.lte = parseInt(maxPrice, 10);
-    where.priceInCents = priceFilter;
+    // Filter via listing price
+    where.listings = {
+      some: {
+        ...((where.listings as { some: object })?.some || {}),
+        priceInCents: priceFilter,
+      },
+    };
   }
 
   if (device && device !== 'all') {
@@ -186,17 +197,22 @@ export async function GET(request: NextRequest) {
             },
           },
         },
+        // Include webshop listing for pricing
+        listings: {
+          where: { channel: { type: 'webshop' } },
+          take: 1,
+        },
       },
       orderBy,
       skip: (page - 1) * pageSize,
       take: pageSize,
     }) : [];
 
-    // Batch-load discounts for all products
+    // Batch-load discounts for all products (use listing price)
     const discountResults = await batchGetProductDiscountedPrices(
       products.map((p) => ({
         id: p.id,
-        priceInCents: p.priceInCents,
+        priceInCents: p.listings[0]?.priceInCents ?? p.priceInCents,
         year: p.year,
         device: p.device,
         templateId: p.templateId,
@@ -256,9 +272,13 @@ export async function GET(request: NextRequest) {
         name: t.tag.translations[0]?.name || '',
       }));
 
+      // Use listing price (fall back to product price for safety)
+      const listingPrice = product.listings[0]?.priceInCents ?? product.priceInCents;
+      const listingCurrency = product.listings[0]?.currency ?? product.currency;
+
       // Get pre-fetched discount info
       const discountResult = discountResults.get(product.id) || {
-        discountedPriceInCents: product.priceInCents,
+        discountedPriceInCents: listingPrice,
         discountAmount: 0,
         discountPercent: 0,
       };
@@ -273,11 +293,11 @@ export async function GET(request: NextRequest) {
         contentLanguage: product.contentLanguage,
         productType: product.productType,
         device: product.device,
-        priceInCents: product.priceInCents,
+        priceInCents: listingPrice,
         discountedPriceInCents: discountResult.discountedPriceInCents,
         hasDiscount: discountResult.discountAmount > 0,
         discountPercent: discountResult.discountPercent,
-        currency: product.currency,
+        currency: listingCurrency,
         images: product.images as string[],
         tags,
         template: product.template ? {
@@ -402,8 +422,14 @@ export async function GET(request: NextRequest) {
       const rawFeaturedProducts = await prisma.product.findMany({
         where: {
           siteId: site.id,
-          isPublished: true,
-          isFeatured: true,
+          // Filter via listing published+featured status
+          listings: {
+            some: {
+              isPublished: true,
+              isFeatured: true,
+              channel: { type: 'webshop', siteId: site.id },
+            },
+          },
           // Apply same locale filter to featured products
           OR: [
             { contentLanguage: locale },
@@ -449,6 +475,10 @@ export async function GET(request: NextRequest) {
               },
             },
           },
+          listings: {
+            where: { channel: { type: 'webshop' } },
+            take: 1,
+          },
         },
         orderBy,
         take: 4, // Limit to 4 featured products
@@ -458,7 +488,7 @@ export async function GET(request: NextRequest) {
       const featuredDiscountResults = await batchGetProductDiscountedPrices(
         rawFeaturedProducts.map((p) => ({
           id: p.id,
-          priceInCents: p.priceInCents,
+          priceInCents: p.listings[0]?.priceInCents ?? p.priceInCents,
           year: p.year,
           device: p.device,
           templateId: p.templateId,
@@ -512,8 +542,11 @@ export async function GET(request: NextRequest) {
           name: t.tag.translations[0]?.name || '',
         }));
 
+        const featuredListingPrice = product.listings[0]?.priceInCents ?? product.priceInCents;
+        const featuredListingCurrency = product.listings[0]?.currency ?? product.currency;
+
         const discountResult = featuredDiscountResults.get(product.id) || {
-          discountedPriceInCents: product.priceInCents,
+          discountedPriceInCents: featuredListingPrice,
           discountAmount: 0,
           discountPercent: 0,
         };
@@ -528,11 +561,11 @@ export async function GET(request: NextRequest) {
           contentLanguage: product.contentLanguage,
           productType: product.productType,
           device: product.device,
-          priceInCents: product.priceInCents,
+          priceInCents: featuredListingPrice,
           discountedPriceInCents: discountResult.discountedPriceInCents,
           hasDiscount: discountResult.discountAmount > 0,
           discountPercent: discountResult.discountPercent,
-          currency: product.currency,
+          currency: featuredListingCurrency,
           images: product.images as string[],
           tags,
           template: product.template ? {
@@ -552,8 +585,12 @@ export async function GET(request: NextRequest) {
     }
 
     // Get available filter options (years, themes, devices, productTypes) - filtered by locale
+    const publishedListingFilter = {
+      listings: { some: { isPublished: true, channel: { type: 'webshop', siteId: site.id } } },
+    };
     const localeFilter = {
       siteId: site.id,
+      ...publishedListingFilter,
       OR: [
         { contentLanguage: locale },
         { contentLanguage: null },
@@ -562,28 +599,37 @@ export async function GET(request: NextRequest) {
 
     const [years, themes, availableDevices, availableProductTypes, priceRange] = await Promise.all([
       prisma.product.findMany({
-        where: { isPublished: true, year: { not: null }, ...localeFilter },
+        where: { ...localeFilter, year: { not: null } },
         select: { year: true },
         distinct: ['year'],
         orderBy: { year: 'asc' },
       }),
       prisma.product.findMany({
-        where: { isPublished: true, theme: { not: null }, ...localeFilter },
+        where: { ...localeFilter, theme: { not: null } },
         select: { theme: true },
         distinct: ['theme'],
       }),
       prisma.product.findMany({
-        where: { isPublished: true, device: { not: null }, ...localeFilter },
+        where: { ...localeFilter, device: { not: null } },
         select: { device: true },
         distinct: ['device'],
       }),
       prisma.product.findMany({
-        where: { isPublished: true, productType: { not: null }, ...localeFilter },
+        where: { ...localeFilter, productType: { not: null } },
         select: { productType: true },
         distinct: ['productType'],
       }),
-      prisma.product.aggregate({
-        where: { isPublished: true, ...localeFilter },
+      prisma.productListing.aggregate({
+        where: {
+          isPublished: true,
+          channel: { type: 'webshop', siteId: site.id },
+          product: {
+            OR: [
+              { contentLanguage: locale },
+              { contentLanguage: null },
+            ],
+          },
+        },
         _min: { priceInCents: true },
         _max: { priceInCents: true },
       }),

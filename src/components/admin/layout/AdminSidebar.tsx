@@ -23,6 +23,8 @@ import {
   MenuIcon,
   FolderTree,
   PackageSearch,
+  Store,
+  Radio,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -83,6 +85,13 @@ const navigation: NavSection[] = [
       { label: 'Menus', href: '/en/admin/menus', icon: MenuIcon, siteTypes: ['digital', 'physical'] },
     ],
     siteTypes: ['digital', 'physical'],
+  },
+  {
+    title: 'Platform',
+    items: [
+      { label: 'Stores', href: '/en/admin/stores', icon: Store, siteTypes: ['digital', 'physical', '__all__'] },
+      { label: 'Channels', href: '/en/admin/channels', icon: Radio, siteTypes: ['physical', '__all__'] },
+    ],
   },
   {
     title: 'System',
