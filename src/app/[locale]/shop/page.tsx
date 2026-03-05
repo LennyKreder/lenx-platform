@@ -47,7 +47,7 @@ export async function generateMetadata({ params }: ShopPageProps): Promise<Metad
 export default async function ShopPage({ params }: ShopPageProps) {
   const { locale } = await params;
   const site = await getSiteFromHeaders();
-  const settings = await getSettings(site.id);
+  const settings = await getSettings(site.id, site.siteType ?? undefined);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -84,6 +84,7 @@ export default async function ShopPage({ params }: ShopPageProps) {
               device: settings.showFilterDevice,
               itemType: settings.showFilterItemType,
               productType: settings.showFilterProductType,
+              category: settings.showFilterCategory,
             }}
           />
         </Suspense>

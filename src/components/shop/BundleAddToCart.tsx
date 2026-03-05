@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter, usePathname } from 'next/navigation';
 import { ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
@@ -19,7 +20,9 @@ interface BundleAddToCartProps {
 }
 
 export function BundleAddToCart({ bundle, locale }: BundleAddToCartProps) {
-  const { addItem, setIsOpen } = useCart();
+  const { addItem } = useCart();
+  const router = useRouter();
+  const pathname = usePathname();
   const isNL = locale === 'nl';
 
   const handleAddToCart = () => {
@@ -33,8 +36,9 @@ export function BundleAddToCart({ bundle, locale }: BundleAddToCartProps) {
       currency: bundle.currency,
       image: bundle.images[0] || '/placeholder-bundle.png',
       theme: bundle.theme,
+      href: pathname,
     });
-    setIsOpen(true);
+    router.push(`/${locale}/cart`);
   };
 
   return (

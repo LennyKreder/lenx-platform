@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ import { getThumbnailUrl } from '@/lib/image-utils';
 import {
   buildDatedProductUrl,
   buildUndatedProductUrl,
+  buildProductUrl,
   type DatedProductType,
   type UndatedProductType,
 } from '@/lib/routing';
@@ -54,8 +56,9 @@ const languageLabels: Record<string, string> = {
 export function ProductCard({ product, locale, isFeatured }: ProductCardProps) {
   const isNL = locale === 'nl';
   const [isAdded, setIsAdded] = useState(false);
-  const { addItem, setIsOpen } = useCart();
+  const { addItem } = useCart();
   const t = useTranslation();
+  const router = useRouter();
 
   const themeConfig = product.theme
     ? themes[product.theme as keyof typeof themes]
@@ -77,16 +80,17 @@ export function ProductCard({ product, locale, isFeatured }: ProductCardProps) {
   const typeConfig = product.productType
     ? productTypes[product.productType as keyof typeof productTypes]
     : null;
-  const urlSegment = typeConfig?.urlSegment || 'planners';
-  const isDated = typeConfig?.dated ?? true;
 
   let productUrl: string;
-  if (isDated) {
+  if (!typeConfig) {
+    // Physical products or products without a type: simple /shop/product/slug
+    productUrl = buildProductUrl(locale, product.slug);
+  } else if (typeConfig.dated) {
     // For dated products (planners, printables): include year or 'undated'
     const yearSegment = product.year ? String(product.year) : 'undated';
     productUrl = buildDatedProductUrl(
       locale,
-      urlSegment as DatedProductType,
+      typeConfig.urlSegment as DatedProductType,
       yearSegment as 'undated' | '2025' | '2026' | '2027' | '2028' | '2029' | '2030',
       product.slug
     );
@@ -94,7 +98,7 @@ export function ProductCard({ product, locale, isFeatured }: ProductCardProps) {
     // For undated products (notebooks, templates): no year segment
     productUrl = buildUndatedProductUrl(
       locale,
-      urlSegment as UndatedProductType,
+      typeConfig.urlSegment as UndatedProductType,
       product.slug
     );
   }
@@ -115,6 +119,7 @@ export function ProductCard({ product, locale, isFeatured }: ProductCardProps) {
       currency: product.currency,
       image: product.images[0] || '/placeholder-product.png',
       theme: product.theme,
+      href: productUrl,
     });
     trackAddToCart({
       id: product.id,
@@ -124,7 +129,7 @@ export function ProductCard({ product, locale, isFeatured }: ProductCardProps) {
       category: product.productType || undefined,
     });
     setIsAdded(true);
-    setIsOpen(true);
+    router.push(`/${locale}/cart`);
     setTimeout(() => setIsAdded(false), 2000);
   };
 

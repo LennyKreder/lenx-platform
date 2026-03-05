@@ -20,12 +20,14 @@ interface ShopFiltersProps {
   availableThemes: string[];
   availableDevices: string[];
   availableProductTypes: string[];
+  availableCategories?: { id: number; name: string }[];
   selectedYear: string;
   selectedTheme: string;
   selectedThemeMode: string;
   selectedDevice: string;
   selectedItemType: string;
   selectedProductType: string;
+  selectedCategory: string;
   onSale: boolean;
   minPrice: string;
   maxPrice: string;
@@ -35,6 +37,7 @@ interface ShopFiltersProps {
   onDeviceChange: (device: string) => void;
   onItemTypeChange: (type: string) => void;
   onProductTypeChange: (productType: string) => void;
+  onCategoryChange: (category: string) => void;
   onSaleChange: (onSale: boolean) => void;
   onMinPriceChange: (price: string) => void;
   onMaxPriceChange: (price: string) => void;
@@ -48,12 +51,14 @@ export function ShopFilters({
   availableThemes,
   availableDevices,
   availableProductTypes,
+  availableCategories = [],
   selectedYear,
   selectedTheme,
   selectedThemeMode,
   selectedDevice,
   selectedItemType,
   selectedProductType,
+  selectedCategory,
   onSale,
   minPrice,
   maxPrice,
@@ -63,6 +68,7 @@ export function ShopFilters({
   onDeviceChange,
   onItemTypeChange,
   onProductTypeChange,
+  onCategoryChange,
   onSaleChange,
   onMinPriceChange,
   onMaxPriceChange,
@@ -78,6 +84,7 @@ export function ShopFilters({
     selectedDevice !== 'all' ||
     selectedItemType !== 'all' ||
     selectedProductType !== 'all' ||
+    selectedCategory !== 'all' ||
     onSale ||
     minPrice !== '' ||
     maxPrice !== '';
@@ -178,6 +185,23 @@ export function ShopFilters({
             {availableProductTypes.map((typeId) => (
               <SelectItem key={typeId} value={typeId}>
                 {getProductTypeName(typeId, locale)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+
+      {/* Category Filter */}
+      {visibleFilters?.category !== false && availableCategories.length > 0 && (
+        <Select value={selectedCategory} onValueChange={onCategoryChange}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder={isNL ? 'Categorie' : 'Category'} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{isNL ? 'Alle categorieën' : 'All Categories'}</SelectItem>
+            {availableCategories.map((cat) => (
+              <SelectItem key={cat.id} value={cat.id.toString()}>
+                {cat.name}
               </SelectItem>
             ))}
           </SelectContent>

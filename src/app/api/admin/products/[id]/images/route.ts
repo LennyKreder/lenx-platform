@@ -40,8 +40,14 @@ function buildImageBaseSlug(
   device: string | null,
   contentLanguage: string | null,
   year: number | null,
+  productSlug: string | null,
   productId: number
 ): string {
+  // For products without a template (physical), use the product slug
+  if (!templateName && productSlug) {
+    return productSlug;
+  }
+
   const parts: string[] = [];
 
   if (templateName) {
@@ -142,6 +148,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
           },
         },
       },
+      slugs: {
+        where: { isPrimary: true },
+        select: { slug: true },
+        take: 1,
+      },
     },
   });
 
@@ -149,14 +160,16 @@ export async function POST(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ error: 'Product not found' }, { status: 404 });
   }
 
-  // Build base slug: {template-name}-{theme}-{device}-{contentLanguage}-{year}
+  // Build base slug: uses product slug for physical, template properties for digital
   const templateName = product.template?.translations[0]?.name || null;
+  const productSlug = product.slugs[0]?.slug || null;
   const baseSlug = buildImageBaseSlug(
     templateName,
     product.theme,
     product.device,
     product.contentLanguage,
     product.year,
+    productSlug,
     productId
   );
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isAdminAuthenticated } from '@/lib/admin-auth';
-import { getAdminSiteId } from '@/lib/admin-site';
+import { getAdminSiteId, getAdminSiteType } from '@/lib/admin-site';
 import { getSettings, updateSettings } from '@/lib/settings';
 
 export async function GET() {
@@ -9,8 +9,8 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const siteId = await getAdminSiteId();
-  const settings = await getSettings(siteId);
+  const [siteId, siteType] = await Promise.all([getAdminSiteId(), getAdminSiteType()]);
+  const settings = await getSettings(siteId, siteType ?? undefined);
   return NextResponse.json(settings);
 }
 
@@ -21,9 +21,9 @@ export async function PATCH(request: NextRequest) {
   }
 
   try {
-    const siteId = await getAdminSiteId();
+    const [siteId, siteType] = await Promise.all([getAdminSiteId(), getAdminSiteType()]);
     const body = await request.json();
-    const settings = await updateSettings(body, siteId);
+    const settings = await updateSettings(body, siteId, siteType ?? undefined);
     return NextResponse.json(settings);
   } catch (error) {
     console.error('Error updating settings:', error);

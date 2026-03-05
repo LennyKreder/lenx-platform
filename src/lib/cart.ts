@@ -10,6 +10,7 @@ export interface CartItem {
   currency: string;
   image: string;
   theme?: string | null; // For theme color display when no image
+  href?: string; // Product detail page URL
   quantity: number;
 }
 

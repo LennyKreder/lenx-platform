@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter, usePathname } from 'next/navigation';
 import { Breadcrumbs } from '@/components/shop/Breadcrumbs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -111,8 +112,10 @@ export function ProductDetailPage({ product, locale, isOwned = false, isLoggedIn
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [isAdded, setIsAdded] = useState(false);
-  const { addItem, setIsOpen } = useCart();
+  const { addItem } = useCart();
   const t = useTranslation();
+  const router = useRouter();
+  const pathname = usePathname();
 
   const themeConfig = product.theme
     ? themes[product.theme as keyof typeof themes]
@@ -151,6 +154,7 @@ export function ProductDetailPage({ product, locale, isOwned = false, isLoggedIn
       currency: product.currency,
       image: product.images[0] || '/placeholder-product.png',
       theme: product.theme,
+      href: pathname,
     });
     trackAddToCart({
       id: product.id,
@@ -160,7 +164,7 @@ export function ProductDetailPage({ product, locale, isOwned = false, isLoggedIn
       category: product.productType || undefined,
     });
     setIsAdded(true);
-    setIsOpen(true);
+    router.push(`/${locale}/cart`);
     setTimeout(() => setIsAdded(false), 2000);
   };
 
@@ -417,9 +421,11 @@ export function ProductDetailPage({ product, locale, isOwned = false, isLoggedIn
                   </>
                 )}
               </Button>
-              <p className="text-xs text-muted-foreground text-center">
-                {t('shop.instantDownload')}
-              </p>
+              {product.productType && (
+                <p className="text-xs text-muted-foreground text-center">
+                  {t('shop.instantDownload')}
+                </p>
+              )}
               {product.productType === 'planner' && product.theme && (
                 <Link
                   href={`/${locale}/free-sample?theme=${product.theme}`}

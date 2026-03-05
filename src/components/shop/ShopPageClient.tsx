@@ -64,6 +64,7 @@ interface ShopData {
     themes: string[];
     devices: string[];
     productTypes: string[];
+    categories?: { id: number; name: string }[];
     priceRange?: { min: number; max: number };
   };
 }
@@ -75,6 +76,7 @@ export interface FilterVisibility {
   device?: boolean;
   itemType?: boolean;
   productType?: boolean;
+  category?: boolean;
   onSale?: boolean;
 }
 
@@ -109,6 +111,9 @@ export function ShopPageClient({ locale, initialData, showRecentlyViewed = true,
   );
   const [selectedProductType, setSelectedProductType] = useState(
     searchParams.get('productType') || 'all'
+  );
+  const [selectedCategory, setSelectedCategory] = useState(
+    searchParams.get('category') || 'all'
   );
   const [onSale, setOnSale] = useState(
     searchParams.get('onSale') === 'true'
@@ -159,6 +164,7 @@ export function ShopPageClient({ locale, initialData, showRecentlyViewed = true,
       if (selectedDevice !== 'all') params.set('device', selectedDevice);
       if (selectedItemType !== 'all') params.set('type', selectedItemType);
       if (selectedProductType !== 'all') params.set('productType', selectedProductType);
+      if (selectedCategory !== 'all') params.set('category', selectedCategory);
       if (onSale) params.set('onSale', 'true');
       if (debouncedSearch) params.set('search', debouncedSearch);
       if (debouncedMinPrice) params.set('minPrice', String(Math.round(parseFloat(debouncedMinPrice) * 100)));
@@ -175,7 +181,7 @@ export function ShopPageClient({ locale, initialData, showRecentlyViewed = true,
     } finally {
       setIsLoading(false);
     }
-  }, [locale, selectedYear, selectedTheme, selectedThemeMode, selectedDevice, selectedItemType, selectedProductType, onSale, debouncedSearch, debouncedMinPrice, debouncedMaxPrice, page]);
+  }, [locale, selectedYear, selectedTheme, selectedThemeMode, selectedDevice, selectedItemType, selectedProductType, selectedCategory, onSale, debouncedSearch, debouncedMinPrice, debouncedMaxPrice, page]);
 
   // Update URL when filters change
   const updateUrl = useCallback(() => {
@@ -186,6 +192,7 @@ export function ShopPageClient({ locale, initialData, showRecentlyViewed = true,
     if (selectedDevice !== 'all') params.set('device', selectedDevice);
     if (selectedItemType !== 'all') params.set('type', selectedItemType);
     if (selectedProductType !== 'all') params.set('productType', selectedProductType);
+    if (selectedCategory !== 'all') params.set('category', selectedCategory);
     if (onSale) params.set('onSale', 'true');
     if (debouncedSearch) params.set('search', debouncedSearch);
     if (debouncedMinPrice) params.set('minPrice', debouncedMinPrice);
@@ -195,7 +202,7 @@ export function ShopPageClient({ locale, initialData, showRecentlyViewed = true,
     const queryString = params.toString();
     const newUrl = queryString ? `${pathname}?${queryString}` : pathname;
     router.replace(newUrl, { scroll: false });
-  }, [pathname, router, selectedYear, selectedTheme, selectedThemeMode, selectedDevice, selectedItemType, selectedProductType, onSale, debouncedSearch, debouncedMinPrice, debouncedMaxPrice, page]);
+  }, [pathname, router, selectedYear, selectedTheme, selectedThemeMode, selectedDevice, selectedItemType, selectedProductType, selectedCategory, onSale, debouncedSearch, debouncedMinPrice, debouncedMaxPrice, page]);
 
   useEffect(() => {
     fetchProducts();
@@ -232,6 +239,11 @@ export function ShopPageClient({ locale, initialData, showRecentlyViewed = true,
     setPage(1);
   };
 
+  const handleCategoryChange = (cat: string) => {
+    setSelectedCategory(cat);
+    setPage(1);
+  };
+
   const handleOnSaleChange = (value: boolean) => {
     setOnSale(value);
     setPage(1);
@@ -244,6 +256,7 @@ export function ShopPageClient({ locale, initialData, showRecentlyViewed = true,
     setSelectedDevice('all');
     setSelectedItemType('all');
     setSelectedProductType('all');
+    setSelectedCategory('all');
     setOnSale(false);
     setSearchQuery('');
     setDebouncedSearch('');
@@ -266,6 +279,7 @@ export function ShopPageClient({ locale, initialData, showRecentlyViewed = true,
     selectedDevice !== 'all' ||
     selectedItemType !== 'all' ||
     selectedProductType !== 'all' ||
+    selectedCategory !== 'all' ||
     onSale ||
     searchQuery !== '' ||
     minPrice !== '' ||
@@ -282,12 +296,14 @@ export function ShopPageClient({ locale, initialData, showRecentlyViewed = true,
           availableThemes={data?.filters.themes || []}
           availableDevices={data?.filters.devices || []}
           availableProductTypes={data?.filters.productTypes || []}
+          availableCategories={data?.filters.categories || []}
           selectedYear={selectedYear}
           selectedTheme={selectedTheme}
           selectedThemeMode={selectedThemeMode}
           selectedDevice={selectedDevice}
           selectedItemType={selectedItemType}
           selectedProductType={selectedProductType}
+          selectedCategory={selectedCategory}
           minPrice={minPrice}
           maxPrice={maxPrice}
           onYearChange={handleYearChange}
@@ -296,6 +312,7 @@ export function ShopPageClient({ locale, initialData, showRecentlyViewed = true,
           onDeviceChange={handleDeviceChange}
           onItemTypeChange={handleItemTypeChange}
           onProductTypeChange={handleProductTypeChange}
+          onCategoryChange={handleCategoryChange}
           onSale={onSale}
           onSaleChange={handleOnSaleChange}
           onMinPriceChange={setMinPrice}

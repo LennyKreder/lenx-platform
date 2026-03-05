@@ -10,6 +10,14 @@ import { logger } from '@/lib/logger';
 import { getSettings } from '@/lib/settings';
 import { getSiteFromHeaders } from '@/lib/site-context';
 
+// Pick the best translation for a locale, falling back to any available
+function pickTranslation<T extends { languageCode: string }>(
+  translations: T[],
+  locale: string
+): T | undefined {
+  return translations.find((t) => t.languageCode === locale) || translations[0];
+}
+
 // Strip language suffix from product name (since it's shown as a badge)
 function stripLanguageSuffix(name: string): string {
   const languageNames = Object.values(languages).flatMap((l) => [l.name, l.nativeName]);
@@ -42,6 +50,7 @@ export async function GET(request: NextRequest) {
   const device = searchParams.get('device'); // product device: 'tablet', 'remarkable', or 'all'
   const itemType = searchParams.get('type'); // 'all', 'products', or 'bundles'
   const productType = searchParams.get('productType'); // 'planner', 'printable', 'notebook', 'template'
+  const category = searchParams.get('category'); // category id for physical product filtering
   const onSale = searchParams.get('onSale') === 'true'; // Filter for discounted products only
   const locale = searchParams.get('locale') || 'en'; // UI language for translations
 
@@ -49,7 +58,7 @@ export async function GET(request: NextRequest) {
   const site = await getSiteFromHeaders();
 
   // Pagination - get default page size from settings
-  const settings = await getSettings(site.id);
+  const settings = await getSettings(site.id, site.siteType ?? undefined);
   const page = parseInt(searchParams.get('page') || '1', 10);
   const pageSizeParam = searchParams.get('pageSize');
   const pageSize = pageSizeParam ? parseInt(pageSizeParam, 10) : settings.itemsPerPage;
@@ -117,6 +126,10 @@ export async function GET(request: NextRequest) {
     where.productType = productType;
   }
 
+  if (category && category !== 'all') {
+    where.categoryId = parseInt(category, 10);
+  }
+
   // Filter for discounted products only
   if (onSale) {
     const discountedIds = await getDiscountedProductIds();
@@ -160,9 +173,7 @@ export async function GET(request: NextRequest) {
       include: {
         template: {
           include: {
-            translations: {
-              where: { languageCode: locale },
-            },
+            translations: true,
             slugs: {
               where: { isPrimary: true },
             },
@@ -170,18 +181,14 @@ export async function GET(request: NextRequest) {
               include: {
                 tag: {
                   include: {
-                    translations: {
-                      where: { languageCode: locale },
-                    },
+                    translations: true,
                   },
                 },
               },
             },
           },
         },
-        translations: {
-          where: { languageCode: locale },
-        },
+        translations: true,
         slugs: {
           where: { isPrimary: true },
         },
@@ -190,9 +197,7 @@ export async function GET(request: NextRequest) {
           include: {
             tag: {
               include: {
-                translations: {
-                  where: { languageCode: locale },
-                },
+                translations: true,
               },
             },
           },
@@ -248,8 +253,8 @@ export async function GET(request: NextRequest) {
 
     // Transform products for frontend
     const transformedProducts = products.map((product) => {
-      const productTranslation = product.translations[0];
-      const templateTranslation = product.template?.translations[0];
+      const productTranslation = pickTranslation(product.translations, locale);
+      const templateTranslation = product.template ? pickTranslation(product.template.translations, locale) : undefined;
       // Prefer product slug, then sibling slug, then template slug
       const productSlugMatch = product.slugs.find((s) => s.languageCode === locale) || product.slugs[0];
       const siblingSlug = siblingSlugMap.get(product.id);
@@ -269,7 +274,7 @@ export async function GET(request: NextRequest) {
       const tagSource = product.template?.tags || product.tags || [];
       const tags = tagSource.map((t) => ({
         id: t.tag.id,
-        name: t.tag.translations[0]?.name || '',
+        name: pickTranslation(t.tag.translations, locale)?.name || '',
       }));
 
       // Use listing price (fall back to product price for safety)
@@ -439,9 +444,7 @@ export async function GET(request: NextRequest) {
         include: {
           template: {
             include: {
-              translations: {
-                where: { languageCode: locale },
-              },
+              translations: true,
               slugs: {
                 where: { isPrimary: true },
               },
@@ -449,18 +452,14 @@ export async function GET(request: NextRequest) {
                 include: {
                   tag: {
                     include: {
-                      translations: {
-                        where: { languageCode: locale },
-                      },
+                      translations: true,
                     },
                   },
                 },
               },
             },
           },
-          translations: {
-            where: { languageCode: locale },
-          },
+          translations: true,
           slugs: {
             where: { isPrimary: true },
           },
@@ -468,9 +467,7 @@ export async function GET(request: NextRequest) {
             include: {
               tag: {
                 include: {
-                  translations: {
-                    where: { languageCode: locale },
-                  },
+                  translations: true,
                 },
               },
             },
@@ -508,10 +505,10 @@ export async function GET(request: NextRequest) {
             theme: p.theme,
             device: p.device,
             contentLanguage: p.contentLanguage,
-            slugs: { some: { languageCode: locale, isPrimary: true } },
+            slugs: { some: { isPrimary: true } },
           },
           include: {
-            slugs: { where: { languageCode: locale, isPrimary: true } },
+            slugs: { where: { isPrimary: true } },
           },
         });
         if (siblingWithSlug?.slugs[0]?.slug) {
@@ -520,8 +517,8 @@ export async function GET(request: NextRequest) {
       }
 
       featuredProducts = rawFeaturedProducts.map((product) => {
-        const productTranslation = product.translations[0];
-        const templateTranslation = product.template?.translations[0];
+        const productTranslation = pickTranslation(product.translations, locale);
+        const templateTranslation = product.template ? pickTranslation(product.template.translations, locale) : undefined;
         // Prefer product slug, then sibling slug, then template slug
         const productSlugMatch = product.slugs.find((s) => s.languageCode === locale) || product.slugs[0];
         const siblingSlug = featuredSiblingSlugMap.get(product.id);
@@ -539,7 +536,7 @@ export async function GET(request: NextRequest) {
         const tagSource = product.template?.tags || product.tags || [];
         const tags = tagSource.map((t) => ({
           id: t.tag.id,
-          name: t.tag.translations[0]?.name || '',
+          name: pickTranslation(t.tag.translations, locale)?.name || '',
         }));
 
         const featuredListingPrice = product.listings[0]?.priceInCents ?? product.priceInCents;
@@ -597,7 +594,7 @@ export async function GET(request: NextRequest) {
       ],
     };
 
-    const [years, themes, availableDevices, availableProductTypes, priceRange] = await Promise.all([
+    const [years, themes, availableDevices, availableProductTypes, priceRange, availableCategories] = await Promise.all([
       prisma.product.findMany({
         where: { ...localeFilter, year: { not: null } },
         select: { year: true },
@@ -633,6 +630,15 @@ export async function GET(request: NextRequest) {
         _min: { priceInCents: true },
         _max: { priceInCents: true },
       }),
+      prisma.category.findMany({
+        where: {
+          siteId: site.id,
+          isActive: true,
+          products: { some: { ...localeFilter, listings: { some: { isPublished: true, channel: { type: 'webshop', siteId: site.id } } } } },
+        },
+        include: { translations: true },
+        orderBy: { sortOrder: 'asc' },
+      }),
     ]);
 
     // For the main shop page, only show All Access bundles
@@ -659,6 +665,10 @@ export async function GET(request: NextRequest) {
         themes: themes.map((t) => t.theme).filter((t): t is string => t !== null && t !== 'premium_gold'),
         devices: availableDevices.map((d) => d.device).filter((d): d is string => d !== null),
         productTypes: availableProductTypes.map((p) => p.productType).filter((p): p is string => p !== null),
+        categories: availableCategories.map((c) => ({
+          id: c.id,
+          name: pickTranslation(c.translations, locale)?.name || `Category ${c.id}`,
+        })),
         priceRange: {
           min: priceRange._min.priceInCents || 0,
           max: priceRange._max.priceInCents || 0,

@@ -49,26 +49,13 @@ function resolveSite(host: string) {
 }
 
 function getLocaleFromRequest(request: NextRequest, site: typeof defaultSite): string {
-  // Check for locale cookie first
+  // Check for locale cookie first (set by language switcher)
   const localeCookie = request.cookies.get('locale')?.value;
-  if (localeCookie && isValidLocale(localeCookie)) {
+  if (localeCookie && site.locales.includes(localeCookie)) {
     return localeCookie;
   }
 
-  // Check Accept-Language header
-  const acceptLanguage = request.headers.get('accept-language');
-  if (acceptLanguage) {
-    const preferredLocales = acceptLanguage
-      .split(',')
-      .map((lang) => lang.split(';')[0].trim().substring(0, 2).toLowerCase());
-
-    for (const preferred of preferredLocales) {
-      if (isValidLocale(preferred)) {
-        return preferred;
-      }
-    }
-  }
-
+  // Fall back to site's default locale
   return site.defaultLocale;
 }
 

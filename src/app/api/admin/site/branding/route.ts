@@ -42,6 +42,7 @@ export async function GET() {
   }
 
   return NextResponse.json({
+    siteType: site.siteType,
     name: site.name,
     logoUrl: site.logoUrl,
     faviconUrl: site.faviconUrl,

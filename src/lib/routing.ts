@@ -149,6 +149,13 @@ export function buildUndatedCategoryUrl(
 }
 
 /**
+ * Build a simple product URL (for physical products without a productType)
+ */
+export function buildProductUrl(locale: string, slug: string): string {
+  return `/${locale}/shop/product/${slug}`;
+}
+
+/**
  * Build a bundle URL
  */
 export function buildBundleUrl(locale: string, slug: string): string {

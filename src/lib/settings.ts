@@ -13,6 +13,7 @@ export interface SiteSettings {
   showFilterDevice: boolean;
   showFilterItemType: boolean;
   showFilterProductType: boolean;
+  showFilterCategory: boolean;
   itemsPerPage: number;
   productDefaultSortBy: 'name' | 'createdAt' | 'year' | 'theme';
   productDefaultSortOrder: 'asc' | 'desc';
@@ -30,6 +31,7 @@ const DEFAULTS: SiteSettings = {
   showFilterDevice: true,
   showFilterItemType: true,
   showFilterProductType: true,
+  showFilterCategory: true,
   itemsPerPage: 12,
   productDefaultSortBy: 'createdAt',
   productDefaultSortOrder: 'desc',
@@ -50,7 +52,7 @@ function parseActiveLocales(value: string | undefined): Locale[] {
   return DEFAULTS.activeLocales;
 }
 
-export async function getSettings(siteId?: string): Promise<SiteSettings> {
+export async function getSettings(siteId?: string, siteType?: string): Promise<SiteSettings> {
   const sid = siteId || LBL_SITE_ID;
   const rows = await prisma.siteSetting.findMany({ where: { siteId: sid } });
   const map = new Map(rows.map((r) => [r.key, r.value]));
@@ -58,17 +60,27 @@ export async function getSettings(siteId?: string): Promise<SiteSettings> {
   const sortBy = map.get('productDefaultSortBy');
   const sortOrder = map.get('productDefaultSortOrder');
 
+  // Physical sites default to hiding digital-only filters
+  const isPhysical = siteType === 'physical';
+  const boolSetting = (key: string, defaultValue: boolean): boolean => {
+    const v = map.get(key);
+    if (v === 'true') return true;
+    if (v === 'false') return false;
+    return defaultValue;
+  };
+
   return {
-    showRecentlyViewed: map.get('showRecentlyViewed') !== 'false',
-    showRelatedProducts: map.get('showRelatedProducts') !== 'false',
+    showRecentlyViewed: boolSetting('showRecentlyViewed', true),
+    showRelatedProducts: boolSetting('showRelatedProducts', true),
     recentlyViewedMaxQty: parseInt(map.get('recentlyViewedMaxQty') || '4', 10) || 4,
     relatedProductsMaxQty: parseInt(map.get('relatedProductsMaxQty') || '4', 10) || 4,
-    showFilterYear: map.get('showFilterYear') !== 'false',
-    showFilterTheme: map.get('showFilterTheme') !== 'false',
-    showFilterThemeMode: map.get('showFilterThemeMode') !== 'false',
-    showFilterDevice: map.get('showFilterDevice') !== 'false',
-    showFilterItemType: map.get('showFilterItemType') !== 'false',
-    showFilterProductType: map.get('showFilterProductType') !== 'false',
+    showFilterYear: boolSetting('showFilterYear', !isPhysical),
+    showFilterTheme: boolSetting('showFilterTheme', !isPhysical),
+    showFilterThemeMode: boolSetting('showFilterThemeMode', !isPhysical),
+    showFilterDevice: boolSetting('showFilterDevice', !isPhysical),
+    showFilterItemType: boolSetting('showFilterItemType', !isPhysical),
+    showFilterProductType: boolSetting('showFilterProductType', !isPhysical),
+    showFilterCategory: boolSetting('showFilterCategory', true),
     itemsPerPage: parseInt(map.get('itemsPerPage') || '12', 10) || 12,
     productDefaultSortBy: (sortBy === 'name' || sortBy === 'year' || sortBy === 'theme' ? sortBy : 'createdAt') as SiteSettings['productDefaultSortBy'],
     productDefaultSortOrder: (sortOrder === 'asc' ? 'asc' : 'desc') as SiteSettings['productDefaultSortOrder'],
@@ -84,7 +96,7 @@ export async function getActiveLocales(siteId?: string): Promise<Locale[]> {
   return parseActiveLocales(row?.value);
 }
 
-export async function updateSettings(updates: Partial<SiteSettings>, siteId?: string): Promise<SiteSettings> {
+export async function updateSettings(updates: Partial<SiteSettings>, siteId?: string, siteType?: string): Promise<SiteSettings> {
   const sid = siteId || LBL_SITE_ID;
   const entries = Object.entries(updates) as [keyof SiteSettings, boolean | number | string | Locale[]][];
 
@@ -97,7 +109,7 @@ export async function updateSettings(updates: Partial<SiteSettings>, siteId?: st
     });
   }
 
-  return getSettings(sid);
+  return getSettings(sid, siteType);
 }
 
 export { DEFAULTS as SETTING_DEFAULTS };

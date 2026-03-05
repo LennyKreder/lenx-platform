@@ -44,6 +44,7 @@ interface ShopSettings {
   showFilterDevice: boolean;
   showFilterItemType: boolean;
   showFilterProductType: boolean;
+  showFilterCategory: boolean;
   itemsPerPage: number;
   productDefaultSortBy: 'name' | 'createdAt' | 'year' | 'theme';
   productDefaultSortOrder: 'asc' | 'desc';
@@ -51,6 +52,7 @@ interface ShopSettings {
 }
 
 interface SiteBranding {
+  siteType: string;
   name: string;
   logoUrl: string | null;
   faviconUrl: string | null;
@@ -653,13 +655,17 @@ export default function SettingsPage() {
                   <CardDescription>Choose which filter options are visible in the shop.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {([
+                  {(branding?.siteType === 'physical' ? [
+                    { key: 'showFilterCategory', label: 'Category' },
+                    { key: 'showFilterItemType', label: 'Item Type (Products/Bundles)' },
+                  ] as const : [
                     { key: 'showFilterYear', label: 'Year' },
                     { key: 'showFilterTheme', label: 'Theme' },
                     { key: 'showFilterThemeMode', label: 'Theme Mode (Light/Dark)' },
                     { key: 'showFilterDevice', label: 'Device' },
                     { key: 'showFilterItemType', label: 'Item Type (Products/Bundles)' },
                     { key: 'showFilterProductType', label: 'Product Type (Planners/Notebooks/etc.)' },
+                    { key: 'showFilterCategory', label: 'Category' },
                   ] as const).map(({ key, label }, index) => (
                     <div key={key}>
                       {index > 0 && <div className="border-t mb-4" />}

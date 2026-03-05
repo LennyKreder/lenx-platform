@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Sparkles, ShoppingCart, Check, Package } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -34,8 +35,9 @@ interface BundleCardProps {
 
 export function BundleCard({ bundle, locale }: BundleCardProps) {
   const [isAdded, setIsAdded] = useState(false);
-  const { addItem, setIsOpen } = useCart();
+  const { addItem } = useCart();
   const t = useTranslation();
+  const router = useRouter();
   const isNL = locale === 'nl';
 
   const formatter = new Intl.NumberFormat(isNL ? 'nl-NL' : 'en-US', {
@@ -79,6 +81,7 @@ export function BundleCard({ bundle, locale }: BundleCardProps) {
       currency: bundle.currency,
       image: bundle.images[0] || '/placeholder-bundle.png',
       theme: bundle.theme,
+      href: `/${locale}/shop/bundles/${bundle.slug}`,
     });
     trackAddToCart({
       id: bundle.id,
@@ -88,7 +91,7 @@ export function BundleCard({ bundle, locale }: BundleCardProps) {
       category: 'bundle',
     });
     setIsAdded(true);
-    setIsOpen(true);
+    router.push(`/${locale}/cart`);
     setTimeout(() => setIsAdded(false), 2000);
   };
 
